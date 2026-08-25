@@ -1,16 +1,9 @@
 #ifndef ARREGLO_DINAMICO_H
 #define ARREGLO_DINAMICO_H
 
-// Estructura de datos "arreglo dinamico" implementada desde cero.
-// Sustituye a contenedores nativos como std::vector / std::list.
+// Arreglo dinamico implementado desde cero, en lugar de usar std::vector.
 // Solo ofrece las operaciones primitivas de un arreglo (agregar al final,
 // obtener por indice, eliminar por indice, tamano, vaciar).
-//
-// Cualquier operacion de mas alto nivel (busqueda, verificacion de
-// existencia/duplicados, filtrado, etc.) NO esta implementada aqui a
-// proposito: esa logica corresponde al modulo que use este arreglo
-// (Automata, ValidadorAutomata, UnionAutomatas), tal como exige el
-// enunciado del proyecto.
 template <typename T>
 class ArregloDinamico {
 public:

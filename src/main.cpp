@@ -5,11 +5,6 @@
 #include "ValidadorAutomata.h"
 #include "UnionAutomatas.h"
 
-// Punto de entrada: menu de consola. La navegacion y la entrada/salida de
-// datos ya estan implementadas para que puedas concentrarte en la logica
-// pedida por el enunciado (ver los TODO en Automata.cpp, ValidadorAutomata.cpp
-// y UnionAutomatas.cpp).
-
 static void mostrarMenuPrincipal() {
     std::cout << "\n===== Sistema de Automatas Finitos Deterministas =====\n";
     std::cout << "1. Crear automata\n";
@@ -166,20 +161,9 @@ static void probarCadenaMenu(const ArregloDinamico<Automata>& automatas) {
     std::string cadena;
     std::cin >> cadena;
 
-    // TODO(alumno): implementar la simulacion paso a paso (Modulo de
-    // Prueba e Inspeccion de Cadenas, punto 4.2):
-    // 1) Partir del estado inicial del automata seleccionado.
-    // 2) Por cada simbolo de "cadena", buscar la transicion con
-    //    automata.obtenerTransicion(estadoActual, simbolo, siguiente) e
-    //    imprimir el paso (estado actual -> estado siguiente).
-    // 3) Al terminar, indicar si el estado alcanzado es final
-    //    (automata.esEstadoFinal) => cadena aceptada o rechazada.
-    // Si el automata seleccionado es el automata union, ademas deberias
-    // mostrar el veredicto para los dos automatas originales (punto 4.2,
-    // "Veredicto de Aceptacion Triple").
     (void)automatas;
     (void)indice;
-    std::cout << "TODO: logica de simulacion de cadena aun no implementada.\n";
+    std::cout << "Funcion aun no implementada.\n";
 }
 
 int main() {

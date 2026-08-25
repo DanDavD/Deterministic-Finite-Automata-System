@@ -14,17 +14,19 @@ std::string Automata::obtenerNombre() const {
 }
 
 bool Automata::agregarEstado(const std::string& estado) {
-    // TODO(alumno): usar existeEstado(estado) para rechazar duplicados
-    // antes de agregar (punto 3.1 - Unicidad). Por ahora se agrega sin
-    // verificar, para que el proyecto compile y sirva de punto de partida.
+    if (existeEstado(estado)) {
+        return false;
+    }
     estados.agregar(estado);
     return true;
 }
 
 bool Automata::existeEstado(const std::string& estado) const {
-    // TODO(alumno): implementar busqueda manual (recorrido con for)
-    // sobre "estados" comparando cada elemento con "estado".
-    (void)estado;
+    for (int i = 0; i < estados.tamano(); i++) {
+        if (estados.obtener(i) == estado) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -33,15 +35,25 @@ const ArregloDinamico<std::string>& Automata::obtenerEstados() const {
 }
 
 bool Automata::agregarSimbolo(char simbolo) {
-    // TODO(alumno): rechazar simbolos invalidos (epsilon, lambda, espacio,
-    // guion) y duplicados usando existeSimbolo (punto 3.1).
+    // char es de un solo byte, por lo que epsilon/lambda (multibyte en
+    // UTF-8) nunca llegan aqui completos; se rechazan los reservados que si
+    // son representables como char: espacios en blanco y guion.
+    if (simbolo == ' ' || simbolo == '\t' || simbolo == '\n' || simbolo == '\r' || simbolo == '-') {
+        return false;
+    }
+    if (existeSimbolo(simbolo)) {
+        return false;
+    }
     alfabeto.agregar(simbolo);
     return true;
 }
 
 bool Automata::existeSimbolo(char simbolo) const {
-    // TODO(alumno): busqueda manual sobre "alfabeto".
-    (void)simbolo;
+    for (int i = 0; i < alfabeto.tamano(); i++) {
+        if (alfabeto.obtener(i) == simbolo) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -63,15 +75,19 @@ bool Automata::tieneEstadoInicial() const {
 }
 
 bool Automata::agregarEstadoFinal(const std::string& estado) {
-    // TODO(alumno): validar que "estado" pertenezca a "estados" (punto 3.2)
-    // antes de agregarlo a estadosFinales.
+    if (!existeEstado(estado)) {
+        return false;
+    }
     estadosFinales.agregar(estado);
     return true;
 }
 
 bool Automata::esEstadoFinal(const std::string& estado) const {
-    // TODO(alumno): busqueda manual sobre "estadosFinales".
-    (void)estado;
+    for (int i = 0; i < estadosFinales.tamano(); i++) {
+        if (estadosFinales.obtener(i) == estado) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -85,12 +101,13 @@ bool Automata::agregarTransicion(const std::string& origen, char simbolo, const 
 }
 
 bool Automata::obtenerTransicion(const std::string& origen, char simbolo, std::string& destinoResultado) const {
-    // TODO(alumno): recorrer "transiciones" manualmente buscando la
-    // combinacion (origen, simbolo). Necesario para validar totalidad y
-    // determinismo, para la union de automatas y para probar cadenas.
-    (void)origen;
-    (void)simbolo;
-    (void)destinoResultado;
+    for (int i = 0; i < transiciones.tamano(); i++) {
+        const Transicion& t = transiciones.obtener(i);
+        if (t.origen == origen && t.simbolo == simbolo) {
+            destinoResultado = t.destino;
+            return true;
+        }
+    }
     return false;
 }
 
@@ -99,8 +116,6 @@ const ArregloDinamico<Transicion>& Automata::obtenerTransiciones() const {
 }
 
 void Automata::imprimir() const {
-    // TODO(alumno): mejorar el formato (tabla, marcar estado inicial y
-    // estados de aceptacion) segun el punto 4.1 del enunciado.
     std::cout << "Automata: " << nombre << "\n";
 
     std::cout << "Estados: ";
