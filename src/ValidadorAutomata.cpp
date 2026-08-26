@@ -99,6 +99,33 @@ void ValidadorAutomata::verificarEstadosFinales(const Automata& automata, Arregl
 }
 
 void ValidadorAutomata::verificarTransiciones(const Automata& automata, ArregloDinamico<std::string>& errores) {
-    (void)automata;
-    (void)errores;
+    const ArregloDinamico<std::string>& estados = automata.obtenerEstados();
+    const ArregloDinamico<char>& alfabeto = automata.obtenerAlfabeto();
+    const ArregloDinamico<Transicion>& transiciones = automata.obtenerTransiciones();
+
+    for (int i = 0; i < transiciones.tamano(); i++) {
+        const Transicion& t = transiciones.obtener(i);
+        if (!automata.existeEstado(t.destino)) {
+            errores.agregar("el estado de destino '" + t.destino + "' no esta registrado en el conjunto de estados");
+        }
+    }
+
+    for (int i = 0; i < estados.tamano(); i++) {
+        const std::string& estado = estados.obtener(i);
+        for (int j = 0; j < alfabeto.tamano(); j++) {
+            char simbolo = alfabeto.obtener(j);
+            int cantidadDestinos = 0;
+            for (int k = 0; k < transiciones.tamano(); k++) {
+                const Transicion& t = transiciones.obtener(k);
+                if (t.origen == estado && t.simbolo == simbolo) {
+                    cantidadDestinos++;
+                }
+            }
+            if (cantidadDestinos == 0) {
+                errores.agregar("el estado '" + estado + "' carece de transicion para el simbolo '" + std::string(1, simbolo) + "'");
+            } else if (cantidadDestinos > 1) {
+                errores.agregar("el estado '" + estado + "' tiene mas de una transicion definida para el simbolo '" + std::string(1, simbolo) + "'");
+            }
+        }
+    }
 }
