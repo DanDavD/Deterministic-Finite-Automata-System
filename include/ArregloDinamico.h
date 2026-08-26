@@ -29,7 +29,7 @@ public:
         liberar();
     }
 
-    // Agrega un elemento al final del arreglo, redimensionando si hace falta.
+    // agrega elemento final al arreglo y redimensiona el arreglo si se necesita
     void agregar(const T& valor) {
         if (cantidad == capacidad) {
             redimensionar(capacidad == 0 ? 4 : capacidad * 2);
@@ -38,8 +38,7 @@ public:
         cantidad++;
     }
 
-    // Elimina el elemento en la posicion "indice", recorriendo manualmente
-    // el arreglo para desplazar los elementos restantes una posicion.
+    // elimina el elemento en el indice especificado y devuelve true si se elimino, false si el indice es invalido
     bool eliminarEnIndice(int indice) {
         if (indice < 0 || indice >= cantidad) {
             return false;

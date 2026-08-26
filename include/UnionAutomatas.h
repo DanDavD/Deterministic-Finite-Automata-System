@@ -5,7 +5,7 @@
 #include "ArregloDinamico.h"
 #include "Automata.h"
 
-// Resultado de intentar unir dos automatas.
+// resultado a la uion de dos automatas
 struct ResultadoUnion {
     bool exitoso;
     std::string mensajeError;
@@ -14,12 +14,12 @@ struct ResultadoUnion {
     ResultadoUnion() : exitoso(false) {}
 };
 
-// Union de dos DFA previamente validados.
+// Union de dos DFA que si son validos
 class UnionAutomatas {
 public:
     static ResultadoUnion unir(const Automata& automataA, const Automata& automataB);
 
-    // Nombre visible para un estado compuesto (qA, qB), ej: "(q0,p1)".
+    // Nombre visible para un estado compuesto (qA, qB)/ ej:(q0,p1)
     static std::string nombreEstadoPar(const std::string& estadoA, const std::string& estadoB);
 
 private:

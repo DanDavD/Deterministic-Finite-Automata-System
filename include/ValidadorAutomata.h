@@ -5,8 +5,8 @@
 #include "ArregloDinamico.h"
 #include "Automata.h"
 
-// Resultado de validar un automata: si es valido, y en caso contrario, el
-// listado detallado de errores encontrados.
+// resultado de validar un automata: si es valido, y en caso contrario, el
+// listado detallado de errores encontrados
 struct ResultadoValidacion {
     bool esValido;
     ArregloDinamico<std::string> errores;
@@ -14,7 +14,7 @@ struct ResultadoValidacion {
     ResultadoValidacion() : esValido(false) {}
 };
 
-// Validacion estricta de un DFA.
+// validacion de dfa
 class ValidadorAutomata {
 public:
     static ResultadoValidacion validar(const Automata& automata);

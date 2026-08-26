@@ -4,7 +4,7 @@
 #include <string>
 #include "ArregloDinamico.h"
 
-// Representa una transicion (estadoOrigen, simbolo) -> estadoDestino.
+// Representa una transicion (estadoOrigen, simbolo) -> estadoDestino
 struct Transicion {
     std::string origen;
     char simbolo;
@@ -15,8 +15,8 @@ struct Transicion {
         : origen(o), simbolo(s), destino(d) {}
 };
 
-// Representa un Automata Finito Determinista (DFA) usando unicamente
-// estructuras de datos propias (ArregloDinamico), sin STL containers.
+// eepresenta un Automata Finito Determinista (DFA) usando unicamente
+// estructuras de datos propias (ArregloDinamico), sin STL containers
 class Automata {
 public:
     Automata();
