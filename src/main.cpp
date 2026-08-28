@@ -150,20 +150,81 @@ static void unirAutomatasMenu(ArregloDinamico<Automata>& automatas) {
     std::cout << "El automata union se guardo en el indice " << (automatas.tamano() - 1) << ".\n";
 }
 
+// corre la cadena paso a paso; si traza no es nullptr guarda cada estado
+static bool simularCadena(const Automata& automata, const std::string& cadena,
+                          ArregloDinamico<std::string>* traza) {
+    if (!automata.tieneEstadoInicial()) {
+        return false;
+    }
+    std::string actual = automata.obtenerEstadoInicial();
+    if (traza != nullptr) {
+        traza->agregar(actual);
+    }
+    for (int i = 0; i < (int)cadena.size(); i++) {
+        std::string siguiente;
+        if (!automata.obtenerTransicion(actual, cadena[i], siguiente)) {
+            return false;
+        }
+        actual = siguiente;
+        if (traza != nullptr) {
+            traza->agregar(actual);
+        }
+    }
+    return automata.esEstadoFinal(actual);
+}
+
 static void probarCadenaMenu(const ArregloDinamico<Automata>& automatas) {
     std::cout << "\n--- Probar cadena ---\n";
-    int indice = seleccionarAutomata(automatas, "automata sobre el que se probara la cadena");
-    if (indice == -1) {
+    std::cout << "Se prueba sobre el automata union y sus dos originales por separado.\n";
+
+    int indiceUnion = seleccionarAutomata(automatas, "automata union");
+    if (indiceUnion == -1) {
+        return;
+    }
+    int indiceA = seleccionarAutomata(automatas, "automata 1 original");
+    if (indiceA == -1) {
+        return;
+    }
+    int indiceB = seleccionarAutomata(automatas, "automata 2 original");
+    if (indiceB == -1) {
         return;
     }
 
-    std::cout << "Cadena a evaluar: ";
+    std::cout << "Cadena a evaluar (- para cadena vacia): ";
     std::string cadena;
     std::cin >> cadena;
+    if (cadena == "-") {
+        cadena = "";
+    }
 
-    (void)automatas;
-    (void)indice;
-    std::cout << "Funcion aun no implementada.\n";
+    const Automata& automataUnion = automatas.obtener(indiceUnion);
+    const Automata& automata1 = automatas.obtener(indiceA);
+    const Automata& automata2 = automatas.obtener(indiceB);
+
+    ArregloDinamico<std::string> traza;
+    bool aceptaUnion = simularCadena(automataUnion, cadena, &traza);
+
+    std::cout << "\nRecorrido sobre el automata union:\n";
+    if (traza.estaVacio()) {
+        std::cout << "  el automata union no tiene estado inicial\n";
+    } else {
+        std::cout << "  " << traza.obtener(0) << "\n";
+        for (int i = 1; i < traza.tamano(); i++) {
+            std::cout << "  --" << cadena[i - 1] << "--> " << traza.obtener(i) << "\n";
+        }
+        int consumidos = traza.tamano() - 1;
+        if (consumidos < (int)cadena.size()) {
+            std::cout << "  no hay transicion para '" << cadena[consumidos] << "', el recorrido se detiene\n";
+        }
+    }
+
+    bool acepta1 = simularCadena(automata1, cadena, nullptr);
+    bool acepta2 = simularCadena(automata2, cadena, nullptr);
+
+    std::cout << "\nVeredicto para la cadena \"" << cadena << "\":\n";
+    std::cout << "  Automata 1 (" << automata1.obtenerNombre() << "): " << (acepta1 ? "ACEPTADA" : "RECHAZADA") << "\n";
+    std::cout << "  Automata 2 (" << automata2.obtenerNombre() << "): " << (acepta2 ? "ACEPTADA" : "RECHAZADA") << "\n";
+    std::cout << "  Automata union (" << automataUnion.obtenerNombre() << "): " << (aceptaUnion ? "ACEPTADA" : "RECHAZADA") << "\n";
 }
 
 int main() {

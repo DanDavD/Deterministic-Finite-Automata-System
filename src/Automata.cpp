@@ -1,6 +1,14 @@
 #include "Automata.h"
 #include <iostream>
 
+static std::string relleno(int n) {
+    std::string s;
+    for (int i = 0; i < n; i++) {
+        s += ' ';
+    }
+    return s;
+}
+
 Automata::Automata()
     : nombre(""), estadoInicial(""), hayEstadoInicial(false) {
 }
@@ -116,7 +124,7 @@ const ArregloDinamico<Transicion>& Automata::obtenerTransiciones() const {
 }
 
 void Automata::imprimir() const {
-    std::cout << "Automata: " << nombre << "\n";
+    std::cout << "Automata: " << nombre << "\n\n";
 
     std::cout << "Estados: ";
     for (int i = 0; i < estados.tamano(); i++) {
@@ -132,15 +140,65 @@ void Automata::imprimir() const {
 
     std::cout << "Estado inicial: " << (hayEstadoInicial ? estadoInicial : std::string("(sin definir)")) << "\n";
 
-    std::cout << "Estados finales: ";
+    std::cout << "Estados de aceptacion: ";
     for (int i = 0; i < estadosFinales.tamano(); i++) {
         std::cout << estadosFinales.obtener(i) << " ";
     }
+    std::cout << "\n\n";
+
+    // anchos de columna calculados a mano para que la tabla quede alineada
+    int anchoEstado = 6;
+    for (int i = 0; i < estados.tamano(); i++) {
+        int len = (int)estados.obtener(i).size();
+        if (len > anchoEstado) {
+            anchoEstado = len;
+        }
+    }
+
+    ArregloDinamico<int> anchoCol;
+    for (int j = 0; j < alfabeto.tamano(); j++) {
+        int ancho = 1;
+        for (int i = 0; i < estados.tamano(); i++) {
+            std::string destino;
+            if (obtenerTransicion(estados.obtener(i), alfabeto.obtener(j), destino)) {
+                if ((int)destino.size() > ancho) {
+                    ancho = (int)destino.size();
+                }
+            }
+        }
+        anchoCol.agregar(ancho);
+    }
+
+    std::cout << "Tabla de transiciones  (-> inicial, * aceptacion):\n";
+
+    std::cout << relleno(4) << relleno(anchoEstado) << " |";
+    for (int j = 0; j < alfabeto.tamano(); j++) {
+        std::string sim(1, alfabeto.obtener(j));
+        std::cout << " " << sim << relleno(anchoCol.obtener(j) - 1) << " |";
+    }
     std::cout << "\n";
 
-    std::cout << "Transiciones:\n";
-    for (int i = 0; i < transiciones.tamano(); i++) {
-        const Transicion& t = transiciones.obtener(i);
-        std::cout << "  (" << t.origen << ", " << t.simbolo << ") -> " << t.destino << "\n";
+    int total = 4 + anchoEstado + 2;
+    for (int j = 0; j < alfabeto.tamano(); j++) {
+        total += anchoCol.obtener(j) + 3;
+    }
+    for (int i = 0; i < total; i++) {
+        std::cout << "-";
+    }
+    std::cout << "\n";
+
+    for (int i = 0; i < estados.tamano(); i++) {
+        const std::string& e = estados.obtener(i);
+        std::string flecha = (hayEstadoInicial && e == estadoInicial) ? "->" : "  ";
+        std::string estrella = esEstadoFinal(e) ? "*" : " ";
+        std::cout << flecha << estrella << " " << e << relleno(anchoEstado - (int)e.size()) << " |";
+        for (int j = 0; j < alfabeto.tamano(); j++) {
+            std::string destino;
+            if (!obtenerTransicion(e, alfabeto.obtener(j), destino)) {
+                destino = "-";
+            }
+            std::cout << " " << destino << relleno(anchoCol.obtener(j) - (int)destino.size()) << " |";
+        }
+        std::cout << "\n";
     }
 }
