@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema de Automatas Finitos Deterministas</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main class="disposicion">
+
+  <aside class="lateral">
+    <div class="lateral-titulo">
+      <h2>Automatas guardados</h2>
+      <span id="contadorAutomatas" class="contador">0</span>
+    </div>
+    <p class="nota">Solo se guardan los que pasan la validacion.</p>
+    <div id="listaAutomatas" class="lista"></div>
+    <button id="botonNuevo" class="boton boton-primario boton-ancho">+ Nuevo automata</button>
+  </aside>
+
+  <section class="principal">
+
+    <nav class="pestanas" id="pestanas">
+      <button class="pestana activa" data-vista="crear">Crear</button>
+      <button class="pestana" data-vista="detalle">Automata</button>
+      <button class="pestana" data-vista="union">Union</button>
+      <button class="pestana" data-vista="probar">Probar cadena</button>
+    </nav>
+
+    <!-- ================= CREAR ================= -->
+    <div class="vista activa" id="vistaCrear">
+      <div class="encabezado-vista">
+        <h3>Definir un automata</h3>
+        <p>Se valida antes de guardarlo. Si algo falla, no se guarda ni queda disponible para la union.</p>
+      </div>
+
+      <div class="campo">
+        <label for="campoNombre">Nombre</label>
+        <input type="text" id="campoNombre" placeholder="por ejemplo: A1" autocomplete="off">
+      </div>
+
+      <div class="rejilla-dos">
+        <div class="bloque">
+          <div class="bloque-titulo">
+            <h4>Estados</h4>
+            <button class="boton boton-chico" id="botonAgregarEstado">+ estado</button>
+          </div>
+          <div id="filasEstados" class="filas"></div>
+        </div>
+
+        <div class="bloque">
+          <div class="bloque-titulo">
+            <h4>Alfabeto</h4>
+            <button class="boton boton-chico" id="botonAgregarSimbolo">+ simbolo</button>
+          </div>
+          <div id="filasSimbolos" class="filas"></div>
+          <p class="nota">Un caracter por simbolo. Se rechazan espacios y guiones.</p>
+        </div>
+      </div>
+
+      <div class="rejilla-dos">
+        <div class="bloque">
+          <div class="bloque-titulo"><h4>Estado inicial</h4></div>
+          <select id="campoInicial" class="seleccion"></select>
+        </div>
+
+        <div class="bloque">
+          <div class="bloque-titulo"><h4>Estados de aceptacion</h4></div>
+          <div id="cajaFinales" class="marcas"></div>
+          <p class="nota">Puede quedar vacio, eso tambien es valido.</p>
+        </div>
+      </div>
+
+      <div class="bloque">
+        <div class="bloque-titulo">
+          <h4>Transiciones</h4>
+          <div class="grupo-botones">
+            <button class="boton boton-chico activa" id="modoMatriz">Matriz</button>
+            <button class="boton boton-chico" id="modoLibre">Libre</button>
+          </div>
+        </div>
+        <p class="nota" id="notaTransiciones">Una celda por cada estado y simbolo. Dejar una en blanco deja la funcion incompleta.</p>
+        <div id="matrizTransiciones" class="envoltura-tabla"></div>
+        <div id="libreTransiciones" class="oculto">
+          <div id="filasTransiciones" class="filas"></div>
+          <button class="boton boton-chico" id="botonAgregarTransicion">+ transicion</button>
+          <p class="nota">Modo libre: permite repetir un par (estado, simbolo) o apuntar a estados inexistentes, util para ver los errores del validador.</p>
+        </div>
+      </div>
+
+      <div class="acciones">
+        <button class="boton" id="botonValidar">Validar sin guardar</button>
+        <button class="boton boton-primario" id="botonGuardar">Crear y guardar</button>
+        <button class="boton boton-sutil" id="botonEjemplo">Cargar ejemplo</button>
+        <button class="boton boton-sutil" id="botonLimpiar">Limpiar</button>
+      </div>
+
+      <div id="reporteCrear"></div>
+    </div>
+
+    <!-- ================= DETALLE ================= -->
+    <div class="vista" id="vistaDetalle">
+      <div id="detalleVacio" class="vacio">
+        <p>Elegi un automata en la lista de la izquierda para verlo.</p>
+      </div>
+      <div id="detalleContenido" class="oculto">
+        <div class="encabezado-vista">
+          <h3 id="detalleNombre"></h3>
+          <p>Diagrama, tabla de transiciones y listado explicito.</p>
+        </div>
+        <div class="lienzo" id="lienzoDetalle"></div>
+        <div id="resumenDetalle"></div>
+        <div id="tablaDetalle" class="envoltura-tabla"></div>
+      </div>
+    </div>
+
+    <!-- ================= UNION ================= -->
+    <div class="vista" id="vistaUnion">
+      <div class="encabezado-vista">
+        <h3>Union de dos automatas</h3>
+        <p>Los alfabetos tienen que ser identicos. El resultado usa estados par (qA, qB) y acepta si acepta cualquiera de los dos.</p>
+      </div>
+
+      <div class="rejilla-union">
+        <div class="campo">
+          <label for="unionA">Automata 1</label>
+          <select id="unionA" class="seleccion"></select>
+        </div>
+        <div class="signo-union">&cup;</div>
+        <div class="campo">
+          <label for="unionB">Automata 2</label>
+          <select id="unionB" class="seleccion"></select>
+        </div>
+        <button class="boton boton-primario" id="botonUnir">Unir</button>
+      </div>
+
+      <div id="reporteUnion"></div>
+
+      <div id="unionResultado" class="oculto">
+
+        <div class="encabezado-vista">
+          <h3>Construccion paso a paso</h3>
+          <p>Como se arma el automata producto, estado por estado.</p>
+        </div>
+        <div id="construccionUnion"></div>
+
+        <div class="encabezado-vista">
+          <h3 id="unionNombre"></h3>
+          <p>Automata resultante.</p>
+        </div>
+        <div class="lienzo" id="lienzoUnion"></div>
+        <div id="resumenUnion"></div>
+        <div id="tablaUnion" class="envoltura-tabla"></div>
+      </div>
+    </div>
+
+    <!-- ================= PROBAR ================= -->
+    <div class="vista" id="vistaProbar">
+      <div class="encabezado-vista">
+        <h3>Probar una cadena</h3>
+        <p>Recorrido paso a paso. Sobre un automata suelto da un veredicto; sobre una union da el veredicto de los tres por separado.</p>
+      </div>
+
+      <div class="grupo-botones grupo-modo">
+        <button class="boton boton-chico activa" id="modoSimple">Un automata</button>
+        <button class="boton boton-chico" id="modoUnion">Union de dos</button>
+      </div>
+
+      <div id="selectoresSimple">
+        <div class="campo">
+          <label for="probarSolo">Automata a probar</label>
+          <select id="probarSolo" class="seleccion"></select>
+        </div>
+      </div>
+
+      <div id="selectoresUnion" class="oculto">
+        <div class="rejilla-probar">
+          <div class="campo">
+            <label for="probarUnion">Automata union</label>
+            <select id="probarUnion" class="seleccion"></select>
+          </div>
+          <div class="campo">
+            <label for="probarA">Automata 1</label>
+            <select id="probarA" class="seleccion"></select>
+          </div>
+          <div class="campo">
+            <label for="probarB">Automata 2</label>
+            <select id="probarB" class="seleccion"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="fila-cadena">
+        <div class="campo campo-crece">
+          <label for="campoCadena">Cadena</label>
+          <input type="text" id="campoCadena" placeholder="dejar vacio para la cadena vacia" autocomplete="off">
+        </div>
+        <button class="boton boton-primario" id="botonProbar">Probar</button>
+      </div>
+
+      <div id="reporteProbar"></div>
+
+      <div id="probarResultado" class="oculto">
+
+        <div class="veredictos" id="veredictos"></div>
+
+        <div class="reproductor">
+          <div class="cinta" id="cintaCadena"></div>
+          <div class="controles">
+            <button class="boton boton-icono" id="pasoInicio" title="Inicio">&#8676;</button>
+            <button class="boton boton-icono" id="pasoAtras" title="Anterior">&#9664;</button>
+            <button class="boton boton-primario" id="pasoPlay">Reproducir</button>
+            <button class="boton boton-icono" id="pasoAdelante" title="Siguiente">&#9654;</button>
+            <button class="boton boton-icono" id="pasoFin" title="Final">&#8677;</button>
+            <input type="range" id="deslizador" min="0" max="0" value="0" class="deslizador">
+            <span class="marcador-paso" id="marcadorPaso">paso 0</span>
+          </div>
+        </div>
+
+        <div id="grafoPrincipal"></div>
+        <div id="grafosSecundarios" class="rejilla-dos"></div>
+
+        <div class="bloque">
+          <div class="bloque-titulo"><h4 id="tituloTraza">Secuencia de estados</h4></div>
+          <div id="listaTraza" class="traza"></div>
+        </div>
+
+        <div class="encabezado-vista">
+          <h3>Desarrollo formal con δ̂</h3>
+          <p>La funcion de transicion extendida aplicada a la cadena, desarmada paso a paso.</p>
+        </div>
+        <div id="deltaGorro"></div>
+
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
