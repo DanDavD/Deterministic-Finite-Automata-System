@@ -52,24 +52,28 @@ function Vivo() { $r = Get_ '/api/automatas'; return (-not $r.muerto) -and ($r.s
 # =====================================================================
 Seccion 'N. BARRIDO COMPLETO DE ASCII IMPRIMIBLE COMO SIMBOLO'
 # =====================================================================
-# cada char de 33 a 126 como unico simbolo del alfabeto. solo el guion
-# deberia rechazarse (junto a los blancos, probados aparte).
-$rechazadosEsperados = @('-')
+# cada char de 33 a 126 como unico simbolo del alfabeto. todos entran al
+# alfabeto: el filtro ya no esta en la insercion. solo el guion tiene que
+# terminar invalidando el automata, por reservado.
+$reservadosEsperados = @('-')
 $sorpresas = @()
 for ($code = 33; $code -le 126; $code++) {
   $ch = [string][char]$code
   $r = Crear ("Ascii$code") @('q0') @($ch) 'q0' @('q0') @((Tr 'q0' $ch 'q0')) 0
-  $aceptado = ($null -ne $r.body) -and ($r.body.automata.alfabeto.Count -eq 1)
-  $deberia = -not ($rechazadosEsperados -contains $ch)
-  Chk ("N ascii $code '$ch'") ($aceptado -eq $deberia) "aceptado=$aceptado esperaba=$deberia alfabeto=[$($r.body.automata.alfabeto -join '')] valido=$($r.body.valido)"
-  if ($aceptado -ne $deberia) { $sorpresas += "$code '$ch'" }
+  $entro = ($null -ne $r.body) -and ($r.body.automata.alfabeto.Count -eq 1)
+  $deberiaValer = -not ($reservadosEsperados -contains $ch)
+  $ok = $entro -and ($r.body.valido -eq $deberiaValer)
+  Chk ("N ascii $code '$ch'") $ok "entro=$entro valido=$($r.body.valido) esperaba valido=$deberiaValer alfabeto=[$($r.body.automata.alfabeto -join '')]"
+  if (-not $ok) { $sorpresas += "$code '$ch'" }
 }
 Write-Host "  simbolos con comportamiento inesperado: $(if ($sorpresas.Count -eq 0) { 'ninguno' } else { $sorpresas -join ', ' })"
 
-# blancos: deben rechazarse
-foreach ($par in @(@{n='espacio';c=' '}, @{n='tab';c=[string][char]9}, @{n='nueva linea';c=[string][char]10}, @{n='retorno';c=[string][char]13})) {
+# blancos: entran al alfabeto, pero el validador los nombra y los rechaza
+foreach ($par in @(@{n='espacio';c=' ';t='espacio en blanco'}, @{n='tab';c=[string][char]9;t='tabulacion'}, @{n='nueva linea';c=[string][char]10;t='salto de linea'}, @{n='retorno';c=[string][char]13;t='retorno de carro'})) {
   $r = Crear ('Blanco' + $par.n) @('q0') @($par.c, 'a') 'q0' @('q0') @((Tr 'q0' 'a' 'q0')) 0
-  Chk ("N blanco rechazado: " + $par.n) ($r.body.automata.alfabeto.Count -eq 1) "alfabeto count=$($r.body.automata.alfabeto.Count)"
+  Chk ("N blanco entra al alfabeto: " + $par.n) ($r.body.automata.alfabeto.Count -eq 2) "alfabeto count=$($r.body.automata.alfabeto.Count)"
+  Chk ("N blanco invalida: " + $par.n) ($r.body.valido -eq $false) "valido=$($r.body.valido)"
+  Chk ("N blanco nombrado en el error: " + $par.n) (($r.body.errores -join ' ') -like "*$($par.t)*") "errores=$($r.body.errores -join '; ')"
 }
 
 Chk 'N servidor vivo' (Vivo) 'murio en el barrido ascii'

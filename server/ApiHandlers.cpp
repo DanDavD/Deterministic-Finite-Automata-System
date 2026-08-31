@@ -227,6 +227,24 @@ bool indiceValido(int indice) {
     return indice >= 0 && indice < almacen.tamano();
 }
 
+// epsilon y lambda viajan en utf-8 como dos bytes, asi que no caben en el char
+// del alfabeto: hay que reconocerlos aca, antes de recortar nada
+bool esReservadoMultibyte(const std::string& simbolo, std::string& nombre) {
+    if (simbolo.size() != 2 || (unsigned char)simbolo[0] != 0xCE) {
+        return false;
+    }
+    unsigned char segundo = (unsigned char)simbolo[1];
+    if (segundo == 0xB5 || segundo == 0x95) {
+        nombre = "epsilon";
+        return true;
+    }
+    if (segundo == 0xBB || segundo == 0x9B) {
+        nombre = "lambda";
+        return true;
+    }
+    return false;
+}
+
 // el front manda cada transicion como origen + SEP + simbolo + SEP + destino.
 // el separador es un caracter de control que no se puede escribir en el
 // formulario, asi que ningun nombre ni simbolo lo puede contener.
@@ -348,9 +366,7 @@ void crearAutomata(const httplib::Request& peticion, httplib::Response& respuest
         if (estado.size() == 0) {
             continue;
         }
-        if (!nuevo.agregarEstado(estado)) {
-            avisos.agregar("El estado '" + estado + "' estaba repetido en el formulario y solo se registro una vez.");
-        }
+        nuevo.agregarEstado(estado);
     }
 
     int totalSimbolos = (int)peticion.get_param_value_count("simbolo");
@@ -360,12 +376,16 @@ void crearAutomata(const httplib::Request& peticion, httplib::Response& respuest
             continue;
         }
         if (simbolo.size() > 1) {
-            avisos.agregar("El simbolo '" + simbolo + "' tiene mas de un caracter, se ignoro.");
+            std::string reservado;
+            if (esReservadoMultibyte(simbolo, reservado)) {
+                avisos.agregar("El simbolo '" + simbolo + "' (" + reservado + ") representa la cadena vacia: "
+                               "es un simbolo reservado y no puede formar parte del alfabeto.");
+            } else {
+                avisos.agregar("El simbolo '" + simbolo + "' tiene mas de un caracter, se ignoro.");
+            }
             continue;
         }
-        if (!nuevo.agregarSimbolo(simbolo[0])) {
-            avisos.agregar("El simbolo '" + simbolo + "' se rechazo por repetido o por ser un caracter reservado.");
-        }
+        nuevo.agregarSimbolo(simbolo[0]);
     }
 
     std::string inicial = peticion.get_param_value("inicial");
@@ -379,9 +399,7 @@ void crearAutomata(const httplib::Request& peticion, httplib::Response& respuest
         if (estadoFinal.size() == 0) {
             continue;
         }
-        if (!nuevo.agregarEstadoFinal(estadoFinal)) {
-            avisos.agregar("'" + estadoFinal + "' no se pudo marcar como estado de aceptacion porque no esta en el conjunto de estados.");
-        }
+        nuevo.agregarEstadoFinal(estadoFinal);
     }
 
     int totalTransiciones = (int)peticion.get_param_value_count("transicion");

@@ -3,6 +3,7 @@
 ResultadoValidacion ValidadorAutomata::validar(const Automata& automata) {
     ResultadoValidacion resultado;
 
+    verificarNoVacuidad(automata, resultado.errores);
     verificarUnicidadEstados(automata, resultado.errores);
     verificarUnicidadAlfabeto(automata, resultado.errores);
     verificarSimbologiaValida(automata, resultado.errores);
@@ -12,6 +13,15 @@ ResultadoValidacion ValidadorAutomata::validar(const Automata& automata) {
 
     resultado.esValido = resultado.errores.estaVacio();
     return resultado;
+}
+
+void ValidadorAutomata::verificarNoVacuidad(const Automata& automata, ArregloDinamico<std::string>& errores) {
+    if (automata.obtenerEstados().tamano() == 0) {
+        errores.agregar("el conjunto de estados esta vacio");
+    }
+    if (automata.obtenerAlfabeto().tamano() == 0) {
+        errores.agregar("el alfabeto esta vacio");
+    }
 }
 
 void ValidadorAutomata::verificarUnicidadEstados(const Automata& automata, ArregloDinamico<std::string>& errores) {
@@ -66,15 +76,28 @@ void ValidadorAutomata::verificarUnicidadAlfabeto(const Automata& automata, Arre
 
 void ValidadorAutomata::verificarSimbologiaValida(const Automata& automata, ArregloDinamico<std::string>& errores) {
     // char es de 1 byte asi que epsilon/lambda (utf-8 multibyte) no llegan
-    // completos aca; igual se revisan los reservados que si caben en char.
+    // completos aca; se frenan antes, al leer la entrada
     const ArregloDinamico<char>& alfabeto = automata.obtenerAlfabeto();
 
     for (int i = 0; i < alfabeto.tamano(); i++) {
         char simbolo = alfabeto.obtener(i);
-        bool esEspacioEnBlanco = (simbolo == ' ' || simbolo == '\t' || simbolo == '\n' || simbolo == '\r');
-        if (esEspacioEnBlanco || simbolo == '-' || simbolo == '\0') {
-            errores.agregar("el alfabeto contiene un simbolo reservado o no valido en la posicion " + std::to_string(i));
+        std::string descripcion;
+        if (simbolo == ' ') {
+            descripcion = "un espacio en blanco";
+        } else if (simbolo == '\t') {
+            descripcion = "una tabulacion";
+        } else if (simbolo == '\n') {
+            descripcion = "un salto de linea";
+        } else if (simbolo == '\r') {
+            descripcion = "un retorno de carro";
+        } else if (simbolo == '-') {
+            descripcion = "el guion '-'";
+        } else if (simbolo == '\0') {
+            descripcion = "un caracter nulo";
+        } else {
+            continue;
         }
+        errores.agregar("el alfabeto contiene " + descripcion + ", que es un simbolo reservado y no puede usarse");
     }
 }
 

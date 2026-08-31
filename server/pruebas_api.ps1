@@ -106,11 +106,18 @@ Chk 'A4 sin finales es valido' ($A4.body.valido -eq $true) "errores=$($A4.body.e
 Chk 'A4 finales vacio' ($A4.body.automata.finales.Count -eq 0) "finales=$($A4.body.automata.finales.Count)"
 $idA4 = $A4.body.id
 
-# alfabeto vacio: delta es trivialmente total
+# alfabeto vacio: la rubrica pide no vacuidad, asi que se rechaza
 $A5 = Crear 'SinSimbolos' @('z0') @() 'z0' @('z0') @() 1
 Chk 'A5 alfabeto vacio no revienta' (-not $A5.muerto) 'servidor no respondio'
+Chk 'A5 alfabeto vacio invalido' ($A5.body.valido -eq $false) "valido=$($A5.body.valido)"
+Chk 'A5 error nombra el alfabeto vacio' (($A5.body.errores -join ' ') -like '*alfabeto esta vacio*') "errores=$($A5.body.errores -join '; ')"
+Chk 'A5 no se guarda' ($A5.body.guardado -eq $false) "guardado=$($A5.body.guardado)"
 $idA5 = $A5.body.id
-Write-Host "  (info) A5 alfabeto vacio -> valido=$($A5.body.valido)"
+
+# conjunto de estados vacio: mismo criterio
+$A6 = Crear 'SinEstados' @() @('a') '' @() @() 1
+Chk 'A6 sin estados invalido' ($A6.body.valido -eq $false) "valido=$($A6.body.valido)"
+Chk 'A6 error nombra el conjunto vacio' (($A6.body.errores -join ' ') -like '*estados esta vacio*') "errores=$($A6.body.errores -join '; ')"
 
 # =====================================================================
 Seccion 'B. VALIDACION: CASOS INVALIDOS'
@@ -145,7 +152,7 @@ $B7 = Crear 'SoloValidar' @('q0') @('a') 'q0' @() @('q0|a|q0') 0
 Chk 'B7 valido pero no guardado' (($B7.body.valido -eq $true) -and ($B7.body.guardado -eq $false)) "valido=$($B7.body.valido) guardado=$($B7.body.guardado)"
 
 # =====================================================================
-Seccion 'C. AVISOS: ENTRADAS QUE EL MODELO RECHAZA EN SILENCIO'
+Seccion 'C. ENTRADAS SUCIAS: LAS REPORTA EL VALIDADOR, NO LA INSERCION'
 # =====================================================================
 
 # httplib colapsa los pares clave=valor identicos, asi que el duplicado exacto
@@ -162,26 +169,41 @@ Chk 'C2 valido pese al duplicado' ($C2.body.valido -eq $true) "errores=$($C2.bod
 $C2b = Crear 'CasiDup' @('q0','Q0') @('a') 'q0' @() @('q0|a|Q0','Q0|a|q0') 1
 Chk 'C2b q0 y Q0 son distintos' ($C2b.body.automata.estados.Count -eq 2) "estados=$($C2b.body.automata.estados -join ',')"
 
+# el espacio entra al alfabeto y es el validador el que lo rechaza, nombrandolo
 $C3 = Crear 'SimboloEspacio' @('q0') @(' ','a') 'q0' @() @('q0|a|q0') 1
-Chk 'C3 espacio rechazado con aviso' ($C3.body.avisos.Count -ge 1) "avisos=$($C3.body.avisos -join '; ')"
-Chk 'C3 alfabeto sin espacio' ($C3.body.automata.alfabeto.Count -eq 1) "alfabeto=$($C3.body.automata.alfabeto -join ',')"
+Chk 'C3 espacio entra al alfabeto' ($C3.body.automata.alfabeto.Count -eq 2) "alfabeto=[$($C3.body.automata.alfabeto -join '')]"
+Chk 'C3 espacio invalida el automata' ($C3.body.valido -eq $false) "valido=$($C3.body.valido)"
+Chk 'C3 error nombra el espacio en blanco' (($C3.body.errores -join ' ') -like '*espacio en blanco*') "errores=$($C3.body.errores -join '; ')"
+Chk 'C3 no se guarda' ($C3.body.guardado -eq $false) "guardado=$($C3.body.guardado)"
 
 $C4 = Crear 'SimboloGuion' @('q0') @('-','a') 'q0' @() @('q0|a|q0') 1
-Chk 'C4 guion rechazado' ($C4.body.automata.alfabeto.Count -eq 1) "alfabeto=$($C4.body.automata.alfabeto -join ',')"
+Chk 'C4 guion entra al alfabeto' ($C4.body.automata.alfabeto.Count -eq 2) "alfabeto=$($C4.body.automata.alfabeto -join ',')"
+Chk 'C4 guion invalida el automata' ($C4.body.valido -eq $false) "valido=$($C4.body.valido)"
+Chk 'C4 error nombra el guion' (($C4.body.errores -join ' ') -like "*guion*") "errores=$($C4.body.errores -join '; ')"
 
+# epsilon y lambda son multibyte: no caben en el char del alfabeto, se frenan
+# al leer la entrada y el aviso tiene que decir por que
 $C5 = Crear 'SimboloEpsilon' @('q0') @([char]0x03B5, 'a') 'q0' @() @('q0|a|q0') 1
 Chk 'C5 epsilon multibyte rechazado' ($C5.body.automata.alfabeto.Count -eq 1) "alfabeto=$($C5.body.automata.alfabeto -join ',')"
 Chk 'C5 avisa del epsilon' ($C5.body.avisos.Count -ge 1) "avisos=$($C5.body.avisos -join '; ')"
+Chk 'C5 el aviso lo llama epsilon' (($C5.body.avisos -join ' ') -like '*epsilon*') "avisos=$($C5.body.avisos -join '; ')"
+Chk 'C5 el aviso dice que es reservado' (($C5.body.avisos -join ' ') -like '*reservado*') "avisos=$($C5.body.avisos -join '; ')"
 
 $C6 = Crear 'SimboloLambda' @('q0') @([char]0x03BB, 'a') 'q0' @() @('q0|a|q0') 1
 Chk 'C6 lambda multibyte rechazado' ($C6.body.automata.alfabeto.Count -eq 1) "alfabeto=$($C6.body.automata.alfabeto -join ',')"
+Chk 'C6 el aviso lo llama lambda' (($C6.body.avisos -join ' ') -like '*lambda*') "avisos=$($C6.body.avisos -join '; ')"
 
+# el final inexistente queda registrado y lo denuncia el validador
 $C7 = Crear 'FinalFuera' @('q0') @('a') 'q0' @('noExiste') @('q0|a|q0') 1
-Chk 'C7 final inexistente avisa' ($C7.body.avisos.Count -ge 1) "avisos=$($C7.body.avisos -join '; ')"
-Chk 'C7 finales queda vacio' ($C7.body.automata.finales.Count -eq 0) "finales=$($C7.body.automata.finales -join ',')"
+Chk 'C7 final inexistente queda registrado' ($C7.body.automata.finales -contains 'noExiste') "finales=$($C7.body.automata.finales -join ',')"
+Chk 'C7 final inexistente invalida' ($C7.body.valido -eq $false) "valido=$($C7.body.valido)"
+Chk 'C7 error menciona noExiste' (($C7.body.errores -join ' ') -like '*noExiste*') "errores=$($C7.body.errores -join '; ')"
+Chk 'C7 no se guarda' ($C7.body.guardado -eq $false) "guardado=$($C7.body.guardado)"
 
 $C8 = Crear 'SimboloTab' @('q0') @("`t", 'a') 'q0' @() @('q0|a|q0') 1
-Chk 'C8 tab rechazado' ($C8.body.automata.alfabeto.Count -eq 1) "alfabeto count=$($C8.body.automata.alfabeto.Count)"
+Chk 'C8 tab entra al alfabeto' ($C8.body.automata.alfabeto.Count -eq 2) "alfabeto count=$($C8.body.automata.alfabeto.Count)"
+Chk 'C8 tab invalida el automata' ($C8.body.valido -eq $false) "valido=$($C8.body.valido)"
+Chk 'C8 error nombra la tabulacion' (($C8.body.errores -join ' ') -like '*tabulacion*') "errores=$($C8.body.errores -join '; ')"
 
 $C9 = Crear 'SimboloLargo' @('q0') @('ab','a') 'q0' @() @('q0|a|q0') 1
 Chk 'C9 simbolo de 2 chars rechazado' ($C9.body.automata.alfabeto.Count -eq 1) "alfabeto=$($C9.body.automata.alfabeto -join ',')"
@@ -331,14 +353,14 @@ $idG2 = $G2.body.id
 $F6 = Post '/api/unir' "idA=$idA1&idB=$idG2"
 Chk 'F6 mismo alfabeto distinto orden se une' ($F6.body.exitoso -eq $true) "error=$($F6.body.error)"
 
-# union con automata de alfabeto vacio contra uno con alfabeto
+# el de alfabeto vacio no paso la validacion, asi que no se guardo: el enunciado
+# pide que un automata invalido tampoco se pueda usar en operaciones posteriores
 $F7 = Post '/api/unir' "idA=$idA5&idB=$idA1"
-Chk 'F7 alfabeto vacio vs no vacio bloqueado' ($F7.body.exitoso -eq $false) "exitoso=$($F7.body.exitoso)"
+Chk 'F7 un automata invalido no se puede unir' ($F7.status -eq 400) "status=$($F7.status) idA5=$idA5"
 
-# union de dos con alfabeto vacio
 $F8 = Post '/api/unir' "idA=$idA5&idB=$idA5"
-Chk 'F8 dos alfabetos vacios' (-not $F8.muerto) 'servidor cayo'
-Write-Host "  (info) F8 exitoso=$($F8.body.exitoso) estados=$($F8.body.automata.estados.Count)"
+Chk 'F8 dos invalidos tampoco' ($F8.status -eq 400) "status=$($F8.status)"
+Chk 'F8 servidor sigue vivo' (-not $F8.muerto) 'servidor cayo'
 
 # union con el de un estado
 $F9 = Post '/api/unir' "idA=$idA3&idB=$idA1"
@@ -479,12 +501,14 @@ foreach ($c in @('','a','b','abab')) {
   Chk ("H acepta-todo acepta '" + $et + "'") ($r.body.recorridos[0].acepta -eq $true) "acepta=$($r.body.recorridos[0].acepta)"
 }
 
-# alfabeto vacio: solo epsilon
-$r = ProbarSimple $idA5 ''
-Chk 'H alfabeto vacio con epsilon' (-not $r.muerto) 'servidor cayo'
-Write-Host "  (info) alfabeto vacio + epsilon -> acepta=$($r.body.recorridos[0].acepta)"
+# un automata que no se guardo no se puede probar
 $r = ProbarSimple $idA5 'a'
-Chk 'H alfabeto vacio con a se traba' ($r.body.recorridos[0].completa -eq $false) "completa=$($r.body.recorridos[0].completa)"
+Chk 'H no se puede probar un automata invalido' ($r.status -eq 400) "status=$($r.status)"
+
+# simbolo fuera del alfabeto: el recorrido se traba y lo dice
+$r = ProbarSimple $idA3 'z'
+Chk 'H simbolo fuera del alfabeto se traba' ($r.body.recorridos[0].completa -eq $false) "completa=$($r.body.recorridos[0].completa)"
+Chk 'H informa el simbolo que traba' ($r.body.recorridos[0].simboloTrabado -eq 'z') "simboloTrabado=$($r.body.recorridos[0].simboloTrabado)"
 
 Chk 'H servidor sigue vivo' (Vivo) 'el servidor murio en la seccion H'
 

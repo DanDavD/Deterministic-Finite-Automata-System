@@ -26,6 +26,34 @@ static int leerEntero() {
     return valor;
 }
 
+static void imprimirResultadoValidacion(const ResultadoValidacion& resultado) {
+    if (resultado.esValido) {
+        std::cout << "El automata es VALIDO.\n";
+        return;
+    }
+    std::cout << "El automata NO es valido. Errores encontrados:\n";
+    for (int i = 0; i < resultado.errores.tamano(); i++) {
+        std::cout << "  - " << resultado.errores.obtener(i) << "\n";
+    }
+}
+
+// epsilon y lambda ocupan dos bytes en utf-8, no entran en un char
+static bool esReservadoMultibyte(const std::string& simbolo, std::string& nombre) {
+    if (simbolo.size() != 2 || (unsigned char)simbolo[0] != 0xCE) {
+        return false;
+    }
+    unsigned char segundo = (unsigned char)simbolo[1];
+    if (segundo == 0xB5 || segundo == 0x95) {
+        nombre = "epsilon";
+        return true;
+    }
+    if (segundo == 0xBB || segundo == 0x9B) {
+        nombre = "lambda";
+        return true;
+    }
+    return false;
+}
+
 static void crearAutomata(ArregloDinamico<Automata>& automatas) {
     Automata nuevo;
 
@@ -48,9 +76,21 @@ static void crearAutomata(ArregloDinamico<Automata>& automatas) {
     int cantidadSimbolos = leerEntero();
     for (int i = 0; i < cantidadSimbolos; i++) {
         std::cout << "  Simbolo " << (i + 1) << ": ";
-        char simbolo;
+        // se lee como cadena y no como char: asi un caracter multibyte entra
+        // entero y no deja bytes sueltos ensuciando la lectura siguiente
+        std::string simbolo;
         std::cin >> simbolo;
-        nuevo.agregarSimbolo(simbolo);
+        if (simbolo.size() == 1) {
+            nuevo.agregarSimbolo(simbolo[0]);
+            continue;
+        }
+        std::string reservado;
+        if (esReservadoMultibyte(simbolo, reservado)) {
+            std::cout << "    '" << simbolo << "' (" << reservado << ") representa la cadena vacia: "
+                      << "es un simbolo reservado y no se agrega al alfabeto.\n";
+        } else {
+            std::cout << "    '" << simbolo << "' tiene mas de un caracter, se ignora.\n";
+        }
     }
 
     std::cout << "Estado inicial: ";
@@ -75,6 +115,14 @@ static void crearAutomata(ArregloDinamico<Automata>& automatas) {
         char simbolo;
         std::cin >> origen >> simbolo >> destino;
         nuevo.agregarTransicion(origen, simbolo, destino);
+    }
+
+    std::cout << "\n";
+    ResultadoValidacion revision = ValidadorAutomata::validar(nuevo);
+    imprimirResultadoValidacion(revision);
+    if (!revision.esValido) {
+        std::cout << "No se guarda ni queda disponible para la union.\n";
+        return;
     }
 
     automatas.agregar(nuevo);
@@ -106,17 +154,6 @@ static int seleccionarAutomata(const ArregloDinamico<Automata>& automatas, const
     return indice;
 }
 
-static void imprimirResultadoValidacion(const ResultadoValidacion& resultado) {
-    if (resultado.esValido) {
-        std::cout << "El automata es VALIDO.\n";
-        return;
-    }
-    std::cout << "El automata NO es valido. Errores encontrados:\n";
-    for (int i = 0; i < resultado.errores.tamano(); i++) {
-        std::cout << "  - " << resultado.errores.obtener(i) << "\n";
-    }
-}
-
 static void validarAutomataMenu(const ArregloDinamico<Automata>& automatas) {
     std::cout << "\n--- Validar automata ---\n";
     int indice = seleccionarAutomata(automatas, "a validar");
@@ -141,6 +178,17 @@ static void unirAutomatasMenu(ArregloDinamico<Automata>& automatas) {
     ResultadoUnion resultado = UnionAutomatas::unir(automatas.obtener(indiceA), automatas.obtener(indiceB));
     if (!resultado.exitoso) {
         std::cout << "No se pudo unir: " << resultado.mensajeError << "\n";
+        return;
+    }
+
+    // si los nombres de estado traen comas o parentesis, dos pares distintos
+    // pueden terminar con el mismo nombre y el automata sale roto
+    ResultadoValidacion revision = ValidadorAutomata::validar(resultado.automataResultante);
+    if (!revision.esValido) {
+        std::cout << "La union genero un automata invalido, no se guarda:\n";
+        for (int i = 0; i < revision.errores.tamano(); i++) {
+            std::cout << "  - " << revision.errores.obtener(i) << "\n";
+        }
         return;
     }
 

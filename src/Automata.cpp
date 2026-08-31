@@ -21,10 +21,9 @@ std::string Automata::obtenerNombre() const {
     return nombre;
 }
 
+// la insercion acepta lo que venga; quien decide si el automata sirve es
+// ValidadorAutomata, asi tiene algo real que revisar
 bool Automata::agregarEstado(const std::string& estado) {
-    if (existeEstado(estado)) {
-        return false;
-    }
     estados.agregar(estado);
     return true;
 }
@@ -43,15 +42,6 @@ const ArregloDinamico<std::string>& Automata::obtenerEstados() const {
 }
 
 bool Automata::agregarSimbolo(char simbolo) {
-    // char es de un solo byte, por lo que epsilon/lambda (multibyte en
-    // UTF-8) nunca llegan aqui completos; se rechazan los reservados que si
-    // son representables como char: espacios en blanco y guion.
-    if (simbolo == ' ' || simbolo == '\t' || simbolo == '\n' || simbolo == '\r' || simbolo == '-') {
-        return false;
-    }
-    if (existeSimbolo(simbolo)) {
-        return false;
-    }
     alfabeto.agregar(simbolo);
     return true;
 }
@@ -83,9 +73,6 @@ bool Automata::tieneEstadoInicial() const {
 }
 
 bool Automata::agregarEstadoFinal(const std::string& estado) {
-    if (!existeEstado(estado)) {
-        return false;
-    }
     estadosFinales.agregar(estado);
     return true;
 }
