@@ -1,79 +1,89 @@
-# Sistema de Autómatas Finitos Deterministas (DFA)
+# Deterministic Finite Automata (DFA) System
 
-Herramienta de teoría de la computación que automatiza dos tareas: el
-**análisis de validez formal** de un Autómata Finito Determinista y la
-**operación de unión** entre dos DFA válidos, generando el autómata producto
-que reconoce el lenguaje unión.
+A theory-of-computation tool that automates two tasks: the **formal validity
+analysis** of a Deterministic Finite Automaton and the **union operation**
+between two valid DFAs, producing the product automaton that recognizes the
+union language.
 
-Implementado en C++17, con todas las estructuras de datos y algoritmos de
-búsqueda programados desde cero.
+Implemented in C++17, with every data structure and search algorithm written
+from scratch.
 
----
-
-## Índice
-
-1. [Descripción general](#1-descripción-general)
-2. [Restricción técnica: estructuras propias](#2-restricción-técnica-estructuras-propias)
-3. [Arquitectura y estructura del proyecto](#3-arquitectura-y-estructura-del-proyecto)
-4. [Modelo de datos](#4-modelo-de-datos)
-5. [Módulo 1 — Validación estricta de DFA](#5-módulo-1--validación-estricta-de-dfa)
-6. [Módulo 2 — Unión de autómatas](#6-módulo-2--unión-de-autómatas)
-7. [Salidas y prueba de cadenas](#7-salidas-y-prueba-de-cadenas)
-8. [Compilación y ejecución](#8-compilación-y-ejecución)
-9. [Guía de uso: menú de consola](#9-guía-de-uso-menú-de-consola)
-10. [Guía de uso: interfaz visual](#10-guía-de-uso-interfaz-visual)
-11. [Algoritmos propios y complejidad](#11-algoritmos-propios-y-complejidad)
-12. [Pruebas](#12-pruebas)
-13. [Decisiones de diseño](#13-decisiones-de-diseño)
-14. [Alcance](#14-alcance)
+> **Where the code lives.** The core — data structures, validation and union
+> algorithms — is C++17: `include/`, `src/` and the C++ files in `server/`.
+> `server/static/` (HTML/CSS/JS) and the PowerShell scripts in `server/` are a
+> thin demo and test layer around that core, which is why they are excluded
+> from GitHub's language statistics (see [`.gitattributes`](.gitattributes)).
+>
+> Identifiers (`ArregloDinamico`, `Transicion`, `agregar`, ...) and the
+> program's own output (menus, validation messages) are in Spanish. They are
+> quoted verbatim in this document so they match what you see on screen.
 
 ---
 
-## 1. Descripción general
+## Table of contents
 
-Un DFA se define formalmente como la quíntupla **M = (Q, Σ, δ, q₀, F)**, donde
-Q es el conjunto de estados, Σ el alfabeto, δ: Q × Σ → Q la función de
-transición, q₀ el estado inicial y F ⊆ Q el conjunto de estados de aceptación.
+1. [Overview](#1-overview)
+2. [Technical constraint: custom data structures](#2-technical-constraint-custom-data-structures)
+3. [Architecture and project structure](#3-architecture-and-project-structure)
+4. [Data model](#4-data-model)
+5. [Module 1 — Strict DFA validation](#5-module-1--strict-dfa-validation)
+6. [Module 2 — Automata union](#6-module-2--automata-union)
+7. [Output and string testing](#7-output-and-string-testing)
+8. [Build and run](#8-build-and-run)
+9. [Usage guide: console menu](#9-usage-guide-console-menu)
+10. [Usage guide: visual interface](#10-usage-guide-visual-interface)
+11. [Custom algorithms and complexity](#11-custom-algorithms-and-complexity)
+12. [Tests](#12-tests)
+13. [Design decisions](#13-design-decisions)
+14. [Scope](#14-scope)
 
-El sistema permite:
+---
 
-1. **Definir** autómatas indicando estados, alfabeto, estado inicial, estados
-   de aceptación y transiciones.
-2. **Validar** estrictamente que la definición cumpla las propiedades de un
-   DFA, con un informe de errores específico. Un autómata que no pasa la
-   validación no se guarda ni queda disponible para operaciones posteriores.
-3. **Unir** dos DFA válidos mediante el producto cartesiano de sus estados,
-   con aceptación por disyunción.
-4. **Visualizar** el resultado como tabla de transiciones, listado explícito
-   de componentes y diagrama de estados.
-5. **Probar cadenas** con trazabilidad paso a paso y veredicto triple:
-   ¿la acepta el Autómata 1?, ¿el Autómata 2?, ¿la unión?
+## 1. Overview
 
-El proyecto entrega dos ejecutables sobre la misma lógica:
+A DFA is formally defined as the 5-tuple **M = (Q, Σ, δ, q₀, F)**, where Q is
+the set of states, Σ the alphabet, δ: Q × Σ → Q the transition function, q₀
+the initial state and F ⊆ Q the set of accepting states.
 
-| Ejecutable | Qué es |
+The system lets you:
+
+1. **Define** automata by providing states, alphabet, initial state,
+   accepting states and transitions.
+2. **Validate** strictly that the definition satisfies the properties of a
+   DFA, with a specific error report. An automaton that fails validation is
+   not stored and is not available for later operations.
+3. **Unite** two valid DFAs through the Cartesian product of their states,
+   with acceptance by disjunction.
+4. **Visualize** the result as a transition table, an explicit listing of
+   components and a state diagram.
+5. **Test strings** with step-by-step traceability and a triple verdict: does
+   Automaton 1 accept it? Automaton 2? The union?
+
+The project ships two executables on top of the same logic:
+
+| Executable | What it is |
 |---|---|
-| `dfa_system` | Menú de consola. Es la interfaz que describe el enunciado. |
-| `dfa_server` | Servidor HTTP local que expone los mismos módulos en el navegador. |
+| `dfa_system` | Console menu. This is the interface the assignment describes. |
+| `dfa_server` | Local HTTP server that exposes the same modules in the browser. |
 
 ---
 
-## 2. Restricción técnica: estructuras propias
+## 2. Technical constraint: custom data structures
 
-El enunciado prohíbe colecciones y algoritmos auxiliares del lenguaje. La
-restricción se cumple de forma literal en **todo el modelo del autómata**
-(`include/` y `src/`).
+The assignment forbids the language's collections and helper algorithms. The
+constraint is met literally across the **entire automaton model** (`include/`
+and `src/`).
 
-**Prohibido y no utilizado:**
+**Forbidden and not used:**
 
-- Contenedores STL: `std::vector`, `std::list`, `std::set`, `std::map`,
+- STL containers: `std::vector`, `std::list`, `std::set`, `std::map`,
   `std::unordered_map`, `std::unordered_set`.
-- Algoritmos y auxiliares de alto nivel: `std::find`, `std::sort`,
-  `.contains()`, cualquier cosa de `<algorithm>`, `std::to_string`,
-  `<sstream>` y expresiones regulares (`<regex>`).
+- High-level algorithms and helpers: `std::find`, `std::sort`,
+  `.contains()`, anything from `<algorithm>`, `std::to_string`, `<sstream>`
+  and regular expressions (`<regex>`).
 
-**Cómo se verifica.** Las únicas cabeceras del sistema que incluye el modelo
-son `<string>` e `<iostream>`:
+**How it is verified.** The only system headers the model includes are
+`<string>` and `<iostream>`:
 
 ```
 > Select-String -Path include\*.h, src\*.cpp -Pattern '^#include <'
@@ -86,68 +96,68 @@ src\main.cpp:1:#include <iostream>
 src\main.cpp:2:#include <string>
 ```
 
-Seis líneas en total: `<string>` para los nombres de estado y `<iostream>`
-para la entrada y salida por consola. Nada más.
+Six lines in total: `<string>` for state names and `<iostream>` for console
+input and output. Nothing else.
 
-`std::string` y `char` sí se usan como **tipos de valor** para nombres de
-estado y símbolos: el enunciado prohíbe colecciones y algoritmos, no los tipos
-básicos del lenguaje.
+`std::string` and `char` are used as **value types** for state names and
+symbols: the assignment forbids collections and algorithms, not the
+language's basic types.
 
-Toda búsqueda, inserción, verificación de existencia y detección de duplicados
-sobre estados, alfabeto, estados finales y transiciones está programada con
-bucles explícitos y comparación uno a uno.
+Every search, insertion, existence check and duplicate detection over states,
+alphabet, final states and transitions is written with explicit loops and
+one-by-one comparison.
 
-### La capa de presentación
+### The presentation layer
 
-La interfaz visual es una capa aparte que **no participa en ninguna decisión**
-sobre estados, alfabeto, transiciones ni validación:
+The visual interface is a separate layer that **takes no part in any decision**
+about states, alphabet, transitions or validation:
 
-- `server/vendor/httplib.h` — biblioteca de terceros de un solo header, usada
-  exclusivamente para aceptar conexiones y parsear HTTP. Mueve bytes por la
-  red y nada más.
-- `server/ApiHandlers.cpp` — llama a los métodos públicos de `Automata`,
-  `ValidadorAutomata` y `UnionAutomatas` y arma el JSON concatenando
-  `std::string` a mano, con su propia conversión de enteros dígito por dígito
-  y su propio parseo de parámetros. Aquí siguen prohibidos los contenedores
-  STL: el único contenedor es `ArregloDinamico`.
-- `server/static/` — el front, **sin librerías de terceros**. El diagrama se
-  genera creando los elementos SVG uno por uno y calculando el layout con
-  trigonometría. En el JavaScript rige la misma disciplina que en C++:
-  arreglos planos recorridos con bucles `for`, sin `Map`, sin `Set` y sin
-  `find`, `includes`, `filter`, `map`, `sort` ni `indexOf`. Las búsquedas
-  (`contieneTexto`, `posicionDeTexto`, `indiceDeNodo`, `buscarDestino`) están
-  escritas a mano.
+- `server/vendor/httplib.h` — a third-party single-header library, used
+  exclusively to accept connections and parse HTTP. It moves bytes over the
+  network and nothing more.
+- `server/ApiHandlers.cpp` — calls the public methods of `Automata`,
+  `ValidadorAutomata` and `UnionAutomatas` and builds the JSON by concatenating
+  `std::string` by hand, with its own digit-by-digit integer conversion and
+  its own parameter parsing. STL containers remain forbidden here: the only
+  container is `ArregloDinamico`.
+- `server/static/` — the front end, **with no third-party libraries**. The
+  diagram is generated by creating the SVG elements one at a time and
+  computing the layout with trigonometry. The JavaScript follows the same
+  discipline as the C++: flat arrays traversed with `for` loops, no `Map`, no
+  `Set`, and no `find`, `includes`, `filter`, `map`, `sort` or `indexOf`. The
+  lookups (`contieneTexto`, `posicionDeTexto`, `indiceDeNodo`,
+  `buscarDestino`) are hand-written.
 
 ---
 
-## 3. Arquitectura y estructura del proyecto
+## 3. Architecture and project structure
 
 ```
 ├── CMakeLists.txt
 ├── include/
-│   ├── ArregloDinamico.h      # único contenedor: arreglo dinámico propio
-│   ├── Automata.h             # estructura del DFA
-│   ├── ValidadorAutomata.h    # Módulo 1
-│   └── UnionAutomatas.h       # Módulo 2
+│   ├── ArregloDinamico.h      # the only container: a custom dynamic array
+│   ├── Automata.h             # DFA structure
+│   ├── ValidadorAutomata.h    # Module 1
+│   └── UnionAutomatas.h       # Module 2
 ├── src/
 │   ├── Automata.cpp
 │   ├── ValidadorAutomata.cpp
 │   ├── UnionAutomatas.cpp
-│   └── main.cpp               # menú de consola  ->  dfa_system
-└── server/                    # interfaz visual  ->  dfa_server
-    ├── main_server.cpp        # arranque, monta el front, abre el navegador
-    ├── ApiHandlers.cpp        # rutas /api/... y armado del JSON
+│   └── main.cpp               # console menu  ->  dfa_system
+└── server/                    # visual interface  ->  dfa_server
+    ├── main_server.cpp        # startup, mounts the front end, opens the browser
+    ├── ApiHandlers.cpp        # /api/... routes and JSON assembly
     ├── ApiHandlers.h
-    ├── vendor/httplib.h       # header de terceros, solo transporte HTTP
-    ├── pruebas_api.ps1        # suite de pruebas de integración
-    ├── pruebas_api2.ps1       # suite de pruebas exhaustivas
+    ├── vendor/httplib.h       # third-party header, HTTP transport only
+    ├── pruebas_api.ps1        # integration test suite
+    ├── pruebas_api2.ps1       # exhaustive test suite
     └── static/
         ├── index.html
         ├── styles.css
-        └── app.js             # incluye el motor de dibujo SVG
+        └── app.js             # includes the SVG drawing engine
 ```
 
-Dependencias entre componentes:
+Dependencies between components:
 
 ```
         ArregloDinamico<T>
@@ -157,44 +167,44 @@ Dependencias entre componentes:
 ValidadorAutomata   UnionAutomatas
             ╲        ╱
           ┌──────────────┐
-          │   dfa_core   │   (biblioteca estática compartida)
+          │   dfa_core   │   (shared static library)
           └──────────────┘
              ╱         ╲
       dfa_system    dfa_server
-      (consola)     (HTTP + front)
+      (console)     (HTTP + front end)
 ```
 
-La lógica vive en `dfa_core` y las dos interfaces la consumen. Ninguna de las
-dos duplica reglas del autómata: si una regla cambia, cambia en un solo lugar.
+The logic lives in `dfa_core` and both interfaces consume it. Neither one
+duplicates automaton rules: if a rule changes, it changes in a single place.
 
 ---
 
-## 4. Modelo de datos
+## 4. Data model
 
 ### `ArregloDinamico<T>`
 
-Reemplazo propio de `std::vector`, con redimensionamiento manual mediante
-`new` / `delete[]`. Interfaz pública:
+A custom replacement for `std::vector`, with manual resizing through
+`new` / `delete[]`. Public interface:
 
-| Operación | Descripción |
+| Operation | Description |
 |---|---|
-| `agregar(valor)` | Inserta al final; duplica la capacidad si hace falta. |
-| `obtener(indice)` | Acceso por índice (versiones const y no const). |
-| `eliminarEnIndice(i)` | Elimina y desplaza los elementos posteriores. |
-| `tamano()` | Cantidad de elementos. |
-| `estaVacio()` | Si no hay elementos. |
-| `vaciar()` | Descarta el contenido. |
+| `agregar(valor)` | Appends at the end; doubles the capacity when needed. |
+| `obtener(indice)` | Access by index (const and non-const versions). |
+| `eliminarEnIndice(i)` | Removes the element and shifts the following ones. |
+| `tamano()` | Number of elements. |
+| `estaVacio()` | Whether there are no elements. |
+| `vaciar()` | Discards the contents. |
 
-Arranca con capacidad 4 y la duplica al llenarse, así que `agregar` es O(1)
-amortizado. Implementa constructor de copia y `operator=` con copia profunda,
-que es lo que permite devolver un `Automata` por valor desde la unión sin
-compartir punteros.
+It starts with capacity 4 and doubles it when full, so `agregar` is amortized
+O(1). It implements a copy constructor and `operator=` with deep copy, which is
+what allows returning an `Automata` by value from the union without sharing
+pointers.
 
-**A propósito no ofrece búsqueda ni verificación de existencia.** Esos
-algoritmos son responsabilidad del proyecto y están implementados en
-`Automata`, `ValidadorAutomata` y `UnionAutomatas`.
+**It deliberately offers no search or existence check.** Those algorithms are
+the project's responsibility and are implemented in `Automata`,
+`ValidadorAutomata` and `UnionAutomatas`.
 
-### `Transicion` y `Automata`
+### `Transicion` and `Automata`
 
 ```cpp
 struct Transicion {
@@ -204,7 +214,7 @@ struct Transicion {
 };
 ```
 
-`Automata` guarda los cinco componentes de la quíntupla en arreglos propios:
+`Automata` stores the five components of the tuple in custom arrays:
 
 ```cpp
 std::string                    nombre;
@@ -216,29 +226,29 @@ ArregloDinamico<std::string>   estadosFinales;  // F
 ArregloDinamico<Transicion>    transiciones;    // δ
 ```
 
-Las transiciones se guardan como una **lista plana de tripletas**, no como una
-matriz. Es lo que permite representar un autómata mal formado —con un par
-(estado, símbolo) repetido, o sin destino— para que el validador tenga algo
-real que examinar. Una matriz indexada haría estructuralmente imposible el
-no-determinismo, y el Módulo 1 no tendría nada que detectar.
+Transitions are stored as a **flat list of triples**, not as a matrix. This is
+what makes it possible to represent a malformed automaton — with a repeated
+(state, symbol) pair, or with a missing target — so the validator has
+something real to examine. An indexed matrix would make non-determinism
+structurally impossible, and Module 1 would have nothing to detect.
 
-Operaciones de consulta, todas con recorrido explícito:
+Query operations, all with explicit traversal:
 
-| Método | Qué hace |
+| Method | What it does |
 |---|---|
-| `existeEstado(e)` | Recorre Q comparando uno a uno. |
-| `existeSimbolo(c)` | Recorre Σ comparando uno a uno. |
-| `esEstadoFinal(e)` | Recorre F comparando uno a uno. |
-| `obtenerTransicion(q, s, destino)` | Recorre δ buscando el primer par (q, s). |
-| `imprimir()` | Tabla de transiciones alineada, con marcadores. |
+| `existeEstado(e)` | Walks Q comparing one by one. |
+| `existeSimbolo(c)` | Walks Σ comparing one by one. |
+| `esEstadoFinal(e)` | Walks F comparing one by one. |
+| `obtenerTransicion(q, s, destino)` | Walks δ looking for the first (q, s) pair. |
+| `imprimir()` | Aligned transition table, with markers. |
 
 ---
 
-## 5. Módulo 1 — Validación estricta de DFA
+## 5. Module 1 — Strict DFA validation
 
-`ValidadorAutomata::validar` devuelve un `ResultadoValidacion` con un booleano
-y la **lista completa de errores encontrados**: no corta en el primero, para
-que un autómata con varios problemas los muestre todos de una vez.
+`ValidadorAutomata::validar` returns a `ResultadoValidacion` with a boolean and
+the **complete list of errors found**: it does not stop at the first one, so
+an automaton with several problems shows them all at once.
 
 ```cpp
 struct ResultadoValidacion {
@@ -247,30 +257,31 @@ struct ResultadoValidacion {
 };
 ```
 
-Verificaciones, en orden de ejecución:
+Checks, in execution order:
 
-| # | Verificación | Qué comprueba |
+| # | Check | What it verifies |
 |---|---|---|
-| 1 | **No vacuidad** | Que Q y Σ no estén vacíos. |
-| 2 | **Unicidad de estados** | Que no haya nombres repetidos en Q. |
-| 3 | **Unicidad del alfabeto** | Que no haya símbolos repetidos en Σ. |
-| 4 | **Simbología válida** | Que Σ no contenga espacios, tabulaciones, saltos de línea, retornos de carro, el guion ni el carácter nulo. |
-| 5 | **Estado inicial** | Que exista exactamente uno y pertenezca a Q. |
-| 6 | **Estados finales** | Que cada elemento de F pertenezca a Q. F vacío es válido. |
-| 7 | **Integridad de destino** | Que todo destino de una transición esté registrado en Q. |
-| 8 | **Totalidad y determinismo de δ** | Que para cada par (estado, símbolo) exista **exactamente una** transición. |
+| 1 | **Non-emptiness** | That Q and Σ are not empty. |
+| 2 | **State uniqueness** | That there are no repeated names in Q. |
+| 3 | **Alphabet uniqueness** | That there are no repeated symbols in Σ. |
+| 4 | **Valid symbols** | That Σ contains no spaces, tabs, line feeds, carriage returns, hyphen or null character. |
+| 5 | **Initial state** | That there is exactly one and it belongs to Q. |
+| 6 | **Final states** | That every element of F belongs to Q. An empty F is valid. |
+| 7 | **Target integrity** | That every transition target is registered in Q. |
+| 8 | **Totality and determinism of δ** | That for every (state, symbol) pair there is **exactly one** transition. |
 
-Las verificaciones 2 y 3 detectan duplicados con doble bucle y llevan una
-lista de valores ya reportados, para que un estado repetido tres veces genere
-un solo error y no dos.
+Checks 2 and 3 detect duplicates with a double loop and keep a list of values
+already reported, so a state repeated three times produces one error and not
+two.
 
-La verificación 8 es el núcleo del módulo: itera cada estado contra cada
-símbolo del alfabeto y **cuenta** cuántas transiciones coinciden. Cero
-transiciones significa función incompleta; más de una, no-determinismo.
+Check 8 is the heart of the module: it iterates every state against every
+alphabet symbol and **counts** how many transitions match. Zero transitions
+means an incomplete function; more than one means non-determinism.
 
-### Catálogo de mensajes de error
+### Error message catalog
 
-Cada error señala la falla exacta, nombrando el elemento concreto:
+Each error points to the exact failure, naming the specific element. The
+messages are the program's actual (Spanish) output:
 
 ```
 el conjunto de estados esta vacio
@@ -287,152 +298,156 @@ el estado 'q2' carece de transicion para el simbolo 'b'
 el estado 'q0' tiene mas de una transicion definida para el simbolo 'a'
 ```
 
-Los símbolos reservados multibyte (**ε**, **λ**) no caben en un `char`, así que
-se detectan al leer la entrada, antes de llegar al alfabeto, y se reportan con
-su nombre:
+In order, they mean: the set of states is empty; the alphabet is empty; a state
+is duplicated; a symbol is duplicated; the alphabet contains the hyphen or a
+blank (reserved symbols); no initial state was defined; the initial state is
+not in Q; a final state is not in Q; a target state is not registered in Q; a
+state lacks a transition for a symbol; a state has more than one transition
+for a symbol.
+
+Reserved multibyte symbols (**ε**, **λ**) do not fit in a `char`, so they are
+detected when the input is read, before reaching the alphabet, and reported by
+name:
 
 ```
 El simbolo 'ε' (epsilon) representa la cadena vacia: es un simbolo reservado
 y no puede formar parte del alfabeto.
 ```
 
-### Consecuencia de una validación fallida
+### Consequence of a failed validation
 
-Un autómata inválido **no se guarda** y por lo tanto no queda disponible para
-la unión ni para la prueba de cadenas. La regla se aplica en las dos
-interfaces: en la consola al crear, y en el servidor antes de añadirlo al
-almacén. El autómata resultante de una unión también se valida antes de
-guardarse.
+An invalid automaton is **not stored** and therefore is not available for the
+union or for string testing. The rule applies in both interfaces: in the
+console when creating, and in the server before adding it to the store. The
+automaton resulting from a union is also validated before being stored.
 
 ---
 
-## 6. Módulo 2 — Unión de autómatas
+## 6. Module 2 — Automata union
 
-### Compatibilidad de alfabetos
+### Alphabet compatibility
 
-Antes de operar se recorren manualmente ambos alfabetos en las dos
-direcciones: cada símbolo de Σ₁ se busca en Σ₂ y viceversa. Si aparece alguna
-diferencia, la operación se bloquea indicando **qué símbolos concretos** no
-coinciden.
+Before operating, both alphabets are walked manually in both directions: every
+symbol of Σ₁ is looked up in Σ₂ and vice versa. If any difference appears, the
+operation is blocked, stating **which specific symbols** do not match.
 
-### Construcción del autómata producto
+### Product automaton construction
 
-Dados M₁ = (Q₁, Σ, δ₁, q₁, F₁) y M₂ = (Q₂, Σ, δ₂, q₂, F₂):
+Given M₁ = (Q₁, Σ, δ₁, q₁, F₁) and M₂ = (Q₂, Σ, δ₂, q₂, F₂):
 
 ```
 M = (Q₁ × Q₂,  Σ,  δ,  (q₁, q₂),  F)
 
 δ((r₁, r₂), a) = (δ₁(r₁, a), δ₂(r₂, a))
-F = { (r₁, r₂) : r₁ ∈ F₁  o  r₂ ∈ F₂ }
+F = { (r₁, r₂) : r₁ ∈ F₁  or  r₂ ∈ F₂ }
 ```
 
-- **Estados compuestos**: doble bucle sobre Q₁ y Q₂; cada par se representa
-  explícitamente con el nombre `(estado1,estado2)`.
-- **Transiciones combinadas**: para cada par y cada símbolo se consulta
-  `obtenerTransicion` en **ambas estructuras originales** de forma simultánea,
-  y el destino es el par de destinos.
-- **Aceptación por disyunción (OR)**: el par es final si el primer componente
-  es final en M₁ **o** el segundo lo es en M₂, evaluado con `esEstadoFinal`.
-- **Estado inicial**: el par de estados iniciales.
+- **Composite states**: a double loop over Q₁ and Q₂; each pair is explicitly
+  represented with the name `(state1,state2)`.
+- **Combined transitions**: for each pair and each symbol, `obtenerTransicion`
+  is queried on **both original structures** simultaneously, and the target is
+  the pair of targets.
+- **Acceptance by disjunction (OR)**: the pair is final if the first component
+  is final in M₁ **or** the second is final in M₂, evaluated with
+  `esEstadoFinal`.
+- **Initial state**: the pair of initial states.
 
-### Ejemplo trabajado
+### Worked example
 
-**M₁ = TerminaEnA** — cadenas que terminan en `a`:
+**M₁ = TerminaEnA** — strings that end in `a`:
 Q₁ = {q0, q1}, Σ = {a, b}, q₁ = q0, F₁ = {q1}
 
-**M₂ = ParesDeB** — cadenas con una cantidad par de `b`:
+**M₂ = ParesDeB** — strings with an even number of `b`:
 Q₂ = {p0, p1}, Σ = {a, b}, q₂ = p0, F₂ = {p0}
 
-Producto cartesiano: 2 × 2 = 4 estados compuestos. Estado inicial `(q0,p0)`.
+Cartesian product: 2 × 2 = 4 composite states. Initial state `(q0,p0)`.
 
-Aceptación por disyunción:
+Acceptance by disjunction:
 
-| Par | q ∈ F₁ | p ∈ F₂ | ¿Final? |
+| Pair | q ∈ F₁ | p ∈ F₂ | Final? |
 |---|---|---|---|
-| `(q0,p0)` | no | **sí** | **sí** |
+| `(q0,p0)` | no | **yes** | **yes** |
 | `(q0,p1)` | no | no | no |
-| `(q1,p0)` | **sí** | **sí** | **sí** |
-| `(q1,p1)` | **sí** | no | **sí** |
+| `(q1,p0)` | **yes** | **yes** | **yes** |
+| `(q1,p1)` | **yes** | no | **yes** |
 
-Tabla de transiciones resultante (`→` inicial, `*` aceptación):
+Resulting transition table (`→` initial, `*` accepting):
 
-|   | Estado | a | b |
+|   | State | a | b |
 |---|---|---|---|
 | →* | `(q0,p0)` | `(q1,p0)` | `(q0,p1)` |
 |  | `(q0,p1)` | `(q1,p1)` | `(q0,p0)` |
 | * | `(q1,p0)` | `(q1,p0)` | `(q0,p1)` |
 | * | `(q1,p1)` | `(q1,p1)` | `(q0,p0)` |
 
-Verificación con la cadena `abb`:
+Check with the string `abb` (`RECHAZADA` = rejected, `ACEPTADA` = accepted):
 
 ```
-Automata 1      RECHAZADA   q0 → q1 → q0 → q0            (no termina en a)
-Automata 2      ACEPTADA    p0 → p0 → p1 → p0            (dos b, cantidad par)
+Automata 1      RECHAZADA   q0 → q1 → q0 → q0            (does not end in a)
+Automata 2      ACEPTADA    p0 → p0 → p1 → p0            (two b, even count)
 Automata union  ACEPTADA    (q0,p0) → (q1,p0) → (q0,p1) → (q0,p0)
 ```
 
-El veredicto de la unión es `RECHAZADA o ACEPTADA = ACEPTADA`, y cada
-componente del recorrido compuesto coincide exactamente con el recorrido
-individual correspondiente.
+The union's verdict is `REJECTED or ACCEPTED = ACCEPTED`, and each component of
+the composite path matches exactly the corresponding individual path.
 
 ---
 
-## 7. Salidas y prueba de cadenas
+## 7. Output and string testing
 
-### Visualización del autómata
+### Automaton visualization
 
-- **Tabla de transiciones**: una fila por estado y una columna por símbolo,
-  con marcador `→` para el estado inicial y `*` para los de aceptación. En
-  consola los anchos de columna se calculan recorriendo los datos, para que la
-  tabla quede alineada con nombres de cualquier longitud.
-- **Listado explícito**: obtenido iterando las estructuras propias — conjunto
-  total de estados, alfabeto, estado inicial y lista completa de estados de
-  aceptación.
-- **Diagrama de estados** (interfaz visual): círculos para los estados, doble
-  anillo para los de aceptación, flecha de entrada para el inicial, arcos
-  etiquetados para las transiciones y bucles para las transiciones a sí mismo.
+- **Transition table**: one row per state and one column per symbol, with a
+  `→` marker for the initial state and `*` for accepting ones. In the console
+  the column widths are computed by walking the data, so the table stays
+  aligned with names of any length.
+- **Explicit listing**: obtained by iterating the custom structures — the full
+  set of states, the alphabet, the initial state and the complete list of
+  accepting states.
+- **State diagram** (visual interface): circles for states, a double ring for
+  accepting ones, an entry arrow for the initial one, labeled arcs for
+  transitions and loops for self-transitions.
 
-### Prueba e inspección de cadenas
+### String testing and inspection
 
-Se admite cualquier cadena sobre el alfabeto, incluida la cadena vacía. El
-recorrido se hace paso a paso guardando cada estado visitado:
+Any string over the alphabet is accepted, including the empty string. The walk
+is performed step by step, storing each visited state:
 
-- **Trazabilidad**: se imprime la secuencia completa de estados desde el
-  inicial hasta el alcanzado, indicando qué símbolo produjo cada salto.
-- Si en algún punto no hay transición definida, el recorrido se detiene y se
-  informa **en qué símbolo** se trabó.
-- **Veredicto triple**: la misma cadena se evalúa de forma independiente sobre
-  el Autómata 1, el Autómata 2 y la unión, y se reportan los tres resultados
-  por separado.
+- **Traceability**: the complete sequence of states from the initial one to the
+  one reached is printed, indicating which symbol produced each jump.
+- If at some point no transition is defined, the walk stops and reports **on
+  which symbol** it got stuck.
+- **Triple verdict**: the same string is evaluated independently on Automaton
+  1, Automaton 2 and the union, and the three results are reported separately.
 
 ---
 
-## 8. Compilación y ejecución
+## 8. Build and run
 
-**Requisitos:** CMake ≥ 3.16 y un compilador C++17 (MinGW g++, MSVC o clang).
+**Requirements:** CMake ≥ 3.16 and a C++17 compiler (MinGW g++, MSVC or clang).
 
 ```powershell
 cmake -S . -B build
 cmake --build build
 ```
 
-Se generan dos ejecutables:
+Two executables are generated:
 
 ```powershell
-.\build\dfa_system.exe    # menú de consola
-.\build\dfa_server.exe    # interfaz visual en http://localhost:8080
+.\build\dfa_system.exe    # console menu
+.\build\dfa_server.exe    # visual interface at http://localhost:8080
 ```
 
-Según el generador que use CMake, los binarios pueden quedar en
-`build\Debug\`. El servidor abre el navegador automáticamente y se detiene con
-`Ctrl+C`; el front se sirve desde `server/static`, así que editar el HTML, el
-CSS o el JS no obliga a recompilar.
+Depending on the generator CMake uses, the binaries may end up in
+`build\Debug\`. The server opens the browser automatically and stops with
+`Ctrl+C`; the front end is served from `server/static`, so editing the HTML,
+CSS or JS does not require recompiling.
 
-El proyecto compila sin advertencias con `-Wall -Wextra -Wpedantic`.
+The project compiles without warnings with `-Wall -Wextra -Wpedantic`.
 
 ---
 
-## 9. Guía de uso: menú de consola
+## 9. Usage guide: console menu
 
 ```
 ===== Sistema de Automatas Finitos Deterministas =====
@@ -444,20 +459,24 @@ El proyecto compila sin advertencias con `-Wall -Wextra -Wpedantic`.
 0. Salir
 ```
 
-**Crear.** Pide nombre, cantidad de estados y sus nombres, cantidad de
-símbolos y sus valores, estado inicial, estados de aceptación y transiciones
-en formato `origen simbolo destino`. Al terminar, valida automáticamente: si
-hay errores los lista y **no guarda** el autómata.
+(1. Create automaton · 2. List stored automata · 3. Validate an automaton ·
+4. Unite two automata · 5. Test a string · 0. Exit)
 
-**Unir.** Pide los índices de dos autómatas guardados. Si los alfabetos no
-coinciden, indica los símbolos que difieren. Si la unión resulta válida, la
-imprime y la guarda como un autómata más, disponible para pruebas.
+**Create.** Asks for a name, the number of states and their names, the number
+of symbols and their values, the initial state, the accepting states and the
+transitions in the format `origen simbolo destino` (source symbol target). When
+finished, it validates automatically: if there are errors it lists them and
+**does not store** the automaton.
 
-**Probar una cadena.** Pide el índice de la unión y los de los dos autómatas
-originales, luego la cadena (`-` para la cadena vacía). Muestra el recorrido
-paso a paso sobre la unión y el veredicto triple.
+**Unite.** Asks for the indices of two stored automata. If the alphabets do not
+match, it indicates the symbols that differ. If the union is valid, it prints
+it and stores it as one more automaton, available for testing.
 
-Ejemplo de sesión creando un autómata inválido:
+**Test a string.** Asks for the index of the union and those of the two
+original automata, then the string (`-` for the empty string). It shows the
+step-by-step walk over the union and the triple verdict.
+
+Example session creating an invalid automaton:
 
 ```
 --- Crear automata ---
@@ -467,151 +486,151 @@ El automata NO es valido. Errores encontrados:
 No se guarda ni queda disponible para la union.
 ```
 
+(The automaton is NOT valid. Errors found: the final state 'zz' does not
+belong to the set of states. It is not stored and is not available for the
+union.)
+
 ---
 
-## 10. Guía de uso: interfaz visual
+## 10. Usage guide: visual interface
 
-`dfa_server` levanta un servidor local en `http://localhost:8080` con cuatro
-pestañas:
+`dfa_server` starts a local server at `http://localhost:8080` with four tabs:
 
-- **Crear** — formulario con la matriz de δ generada a partir de los estados y
-  el alfabeto definidos. El modo *Libre* permite cargar transiciones sueltas,
-  repetir un par (estado, símbolo) o apuntar a estados inexistentes, para ver
-  el validador en acción. Los botones separan *Validar sin guardar* de *Crear
-  y guardar*.
-- **Autómata** — diagrama, listado explícito y tabla de transiciones del
-  autómata seleccionado.
-- **Unión** — selección de los dos operandos y **construcción paso a paso**:
-  definición formal de partida, producto cartesiano, estado inicial,
-  derivación de cada transición δ((r₁,r₂), a) = (δ₁(r₁,a), δ₂(r₂,a)) y
-  evaluación de la disyunción para cada par.
-- **Probar cadena** — reproductor con avance paso a paso, retroceso y
-  deslizador. Resalta el estado actual sobre los diagramas, muestra la cinta
-  de entrada con el símbolo en curso, la secuencia de estados compuestos y el
-  desarrollo formal de la función de transición extendida δ̂.
+- **Create** — a form with the δ matrix generated from the defined states and
+  alphabet. The *Free* mode allows loading loose transitions, repeating a
+  (state, symbol) pair or pointing to nonexistent states, to see the validator
+  in action. The buttons separate *Validate without saving* from *Create and
+  save*.
+- **Automaton** — diagram, explicit listing and transition table of the
+  selected automaton.
+- **Union** — selection of the two operands and a **step-by-step
+  construction**: starting formal definition, Cartesian product, initial
+  state, derivation of each transition δ((r₁,r₂), a) = (δ₁(r₁,a), δ₂(r₂,a))
+  and evaluation of the disjunction for each pair.
+- **Test string** — a player with step forward, step back and a slider. It
+  highlights the current state on the diagrams and shows the input tape with
+  the symbol being read, the sequence of composite states and the formal
+  development of the extended transition function δ̂.
 
-### API HTTP
+### HTTP API
 
-| Método | Ruta | Función |
+| Method | Route | Function |
 |---|---|---|
-| `GET` | `/api/automatas` | Lista los autómatas guardados. |
-| `GET` | `/api/automata?id=N` | Devuelve uno concreto. |
-| `POST` | `/api/automatas` | Crea y valida; guarda solo si es válido. |
-| `POST` | `/api/validar` | Revalida un autómata guardado. |
-| `POST` | `/api/unir` | Une dos autómatas por índice. |
-| `POST` | `/api/probar-cadena` | Recorrido y veredicto (simple o triple). |
+| `GET` | `/api/automatas` | Lists the stored automata. |
+| `GET` | `/api/automata?id=N` | Returns a specific one. |
+| `POST` | `/api/automatas` | Creates and validates; stores only if valid. |
+| `POST` | `/api/validar` | Revalidates a stored automaton. |
+| `POST` | `/api/unir` | Unites two automata by index. |
+| `POST` | `/api/probar-cadena` | Walk and verdict (single or triple). |
 
-Las respuestas son JSON construido por concatenación de cadenas, con escapado
-propio de comillas, barras y caracteres de control.
+Responses are JSON built by string concatenation, with custom escaping of
+quotes, slashes and control characters.
 
-Las transiciones viajan del front al servidor como
-`origen + SEP + simbolo + SEP + destino`, donde `SEP` es el carácter de control
-`0x1F`. Al no poder escribirse en un formulario, ningún nombre de estado ni
-símbolo puede contenerlo, lo que hace el troceado inequívoco sin necesidad de
-escapado ni de expresiones regulares.
+Transitions travel from the front end to the server as
+`origen + SEP + simbolo + SEP + destino`, where `SEP` is the control character
+`0x1F`. Since it cannot be typed into a form, no state name or symbol can
+contain it, which makes the splitting unambiguous with no need for escaping or
+regular expressions.
 
 ---
 
-## 11. Algoritmos propios y complejidad
+## 11. Custom algorithms and complexity
 
-Ninguna operación delega en el lenguaje. Sea *n* = |Q|, *m* = |Σ| y *t* = |δ|:
+No operation delegates to the language. Let *n* = |Q|, *m* = |Σ| and *t* = |δ|:
 
-| Algoritmo | Técnica | Complejidad |
+| Algorithm | Technique | Complexity |
 |---|---|---|
-| `ArregloDinamico::agregar` | Duplicación de capacidad | O(1) amortizado |
-| `ArregloDinamico::eliminarEnIndice` | Desplazamiento de la cola | O(n) |
-| `existeEstado`, `existeSimbolo`, `esEstadoFinal` | Búsqueda lineal | O(n) |
-| `obtenerTransicion` | Búsqueda lineal sobre δ | O(t) |
-| Unicidad de estados / alfabeto | Doble bucle con lista de reportados | O(n²) |
-| Integridad de destinos | Por transición, búsqueda en Q | O(t · n) |
-| Totalidad y determinismo de δ | Por cada par (estado, símbolo), conteo sobre δ | O(n · m · t) |
-| Compatibilidad de alfabetos | Doble recorrido cruzado | O(m²) |
-| Construcción de la unión | Producto cartesiano y consulta doble por símbolo | O(n₁ · n₂ · m · t) |
-| Simulación de una cadena *w* | Una transición por símbolo | O(&#124;w&#124; · t) |
+| `ArregloDinamico::agregar` | Capacity doubling | Amortized O(1) |
+| `ArregloDinamico::eliminarEnIndice` | Shifting the tail | O(n) |
+| `existeEstado`, `existeSimbolo`, `esEstadoFinal` | Linear search | O(n) |
+| `obtenerTransicion` | Linear search over δ | O(t) |
+| State / alphabet uniqueness | Double loop with a list of reported values | O(n²) |
+| Target integrity | Per transition, a search in Q | O(t · n) |
+| Totality and determinism of δ | For each (state, symbol) pair, a count over δ | O(n · m · t) |
+| Alphabet compatibility | Double cross traversal | O(m²) |
+| Union construction | Cartesian product and a double lookup per symbol | O(n₁ · n₂ · m · t) |
+| Simulating a string *w* | One transition per symbol | O(&#124;w&#124; · t) |
 
-Todas las cotas corresponden a búsqueda lineal, que es lo que impone la
-restricción del proyecto: sin tablas hash ni contenedores ordenados, cada
-consulta recorre el arreglo comparando uno a uno. Ninguna de estas operaciones
-se apoya en una función de biblioteca; todas están escritas con bucles
-explícitos sobre `ArregloDinamico`.
+All bounds correspond to linear search, which is what the project's
+constraint imposes: with no hash tables or ordered containers, every query
+walks the array comparing one by one. None of these operations relies on a
+library function; all are written with explicit loops over `ArregloDinamico`.
 
 ---
 
-## 12. Pruebas
+## 12. Tests
 
-El proyecto incluye dos suites de integración en PowerShell que ejercitan la
-API completa contra el servidor en ejecución: **635 comprobaciones**.
+The project includes two PowerShell integration suites that exercise the full
+API against the running server: **635 checks**.
 
 ```powershell
-.\build\dfa_server.exe          # en una terminal
-.\server\pruebas_api.ps1        # en otra
+.\build\dfa_server.exe          # in one terminal
+.\server\pruebas_api.ps1        # in another
 .\server\pruebas_api2.ps1
 ```
 
-Cobertura:
+Coverage:
 
-| Suite | Secciones |
+| Suite | Sections |
 |---|---|
-| `pruebas_api.ps1` | Autómatas válidos, casos inválidos, entradas sucias, nombres y símbolos hostiles (Unicode, comillas, HTML, nombres de 300 caracteres), transiciones mal formadas, uniones, parámetros inválidos, prueba de cadenas simple y triple, rutas y métodos, carga y consistencia. |
-| `pruebas_api2.ps1` | Barrido de los 94 caracteres ASCII imprimibles como símbolo, alfabetos grandes, verificación del lenguaje «binario divisible por 3» sobre 126 cadenas, comprobación exhaustiva de que la unión es exactamente el OR de los lenguajes, colisiones de nombres de par, combinaciones de errores, determinismo e idempotencia. |
+| `pruebas_api.ps1` | Valid automata, invalid cases, dirty input, hostile names and symbols (Unicode, quotes, HTML, 300-character names), malformed transitions, unions, invalid parameters, single and triple string testing, routes and methods, load and consistency. |
+| `pruebas_api2.ps1` | A sweep of the 94 printable ASCII characters as a symbol, large alphabets, verification of the "binary divisible by 3" language over 126 strings, an exhaustive check that the union is exactly the OR of the languages, pair-name collisions, error combinations, determinism and idempotence. |
 
-Dos verificaciones destacan por lo que demuestran:
+Two checks stand out for what they demonstrate:
 
-- **Lenguaje verificado**: se construye el DFA de los binarios divisibles por
-  3 y se contrastan 126 cadenas contra el cálculo aritmético directo.
-- **Unión = OR**: se enumeran todas las cadenas hasta cierta longitud y se
-  comprueba que la unión acepta exactamente cuando lo hace M₁ o M₂.
-
----
-
-## 13. Decisiones de diseño
-
-**Inserción permisiva, validación centralizada.** `agregarEstado`,
-`agregarSimbolo` y `agregarEstadoFinal` aceptan lo que reciben. La alternativa,
-filtrar en la inserción, dejaría sin uso la mitad de las verificaciones del
-Módulo 1: si un estado duplicado no llega a entrar en la estructura, el
-validador no tiene nada que informar sobre él. Concentrando el criterio en un
-solo punto, el validador es quien juzga y quien emite el diagnóstico
-específico que pide el enunciado.
-
-**δ como lista de tripletas, no como matriz.** Una matriz `estado × símbolo`
-representa por construcción una función total y determinista, de modo que un
-autómata incompleto o no determinista sería inexpresable y el Módulo 1 no
-tendría nada que verificar. La lista plana permite representar esos casos y
-que el validador los detecte y los nombre.
-
-**Errores acumulados, no cortocircuito.** `validar` ejecuta las ocho
-verificaciones siempre y devuelve todos los errores. Un autómata con cuatro
-problemas los muestra los cuatro, en lugar de obligar a corregirlos de a uno.
-
-**La unión también se valida.** El nombre de un estado compuesto se forma como
-`(estado1,estado2)`, así que si los nombres originales contienen comas o
-paréntesis dos pares distintos podrían producir el mismo nombre. El autómata
-producto pasa por el validador antes de guardarse y, si no lo supera, la
-operación se bloquea indicando el motivo. Es el mismo criterio del Módulo 1
-aplicado a un autómata generado por el programa en vez de escrito por el
-usuario.
-
-**Una sola fuente de lógica.** La consola y el servidor consumen la misma
-biblioteca `dfa_core`. Ninguna interfaz reimplementa una regla del autómata.
+- **Verified language**: the DFA for binary numbers divisible by 3 is built and
+  126 strings are checked against the direct arithmetic computation.
+- **Union = OR**: every string up to a given length is enumerated and the union
+  is checked to accept exactly when M₁ or M₂ does.
 
 ---
 
-## 14. Alcance
+## 13. Design decisions
 
-**Símbolos de un carácter.** Σ se modela como un conjunto de `char`, que es la
-representación directa del alfabeto en la definición formal: un símbolo es un
-elemento atómico del alfabeto, no una cadena. Los símbolos reservados que
-denotan la cadena vacía (ε, λ) se reconocen al leer la entrada y se rechazan
-con un mensaje propio, tal como exige el Módulo 1.
+**Permissive insertion, centralized validation.** `agregarEstado`,
+`agregarSimbolo` and `agregarEstadoFinal` accept whatever they receive. The
+alternative, filtering at insertion, would leave half of Module 1's checks
+unused: if a duplicate state never makes it into the structure, the validator
+has nothing to report about it. By concentrating the criterion in a single
+place, the validator is the one that judges and the one that issues the
+specific diagnosis the assignment asks for.
 
-**Modelo de sesión.** Los autómatas definidos se guardan en un
-`ArregloDinamico<Automata>` y quedan disponibles para validar, unir y probar
-cadenas durante toda la ejecución. Las dos interfaces comparten ese mismo
-modelo.
+**δ as a list of triples, not a matrix.** A `state × symbol` matrix represents
+by construction a total, deterministic function, so an incomplete or
+non-deterministic automaton would be inexpressible and Module 1 would have
+nothing to verify. The flat list can represent those cases and lets the
+validator detect and name them.
 
-**Búsqueda lineal en todas las estructuras.** Es consecuencia directa de la
-restricción del proyecto: al no disponer de tablas hash ni de contenedores
-ordenados, cada consulta se resuelve recorriendo el arreglo y comparando uno a
-uno. Las cotas de la sección 11 son exactamente las de esa decisión, y cada
-una de esas operaciones está escrita con bucles explícitos.
+**Accumulated errors, no short-circuit.** `validar` always runs all eight
+checks and returns every error. An automaton with four problems shows all four,
+instead of forcing them to be fixed one at a time.
+
+**The union is validated too.** The name of a composite state is formed as
+`(state1,state2)`, so if the original names contain commas or parentheses two
+different pairs could produce the same name. The product automaton goes through
+the validator before being stored and, if it does not pass, the operation is
+blocked with the reason. It is the same criterion as Module 1, applied to an
+automaton generated by the program instead of written by the user.
+
+**A single source of logic.** The console and the server consume the same
+`dfa_core` library. Neither interface reimplements an automaton rule.
+
+---
+
+## 14. Scope
+
+**Single-character symbols.** Σ is modeled as a set of `char`, which is the
+direct representation of the alphabet in the formal definition: a symbol is an
+atomic element of the alphabet, not a string. The reserved symbols that denote
+the empty string (ε, λ) are recognized when the input is read and rejected with
+their own message, as Module 1 requires.
+
+**Session model.** Defined automata are stored in an
+`ArregloDinamico<Automata>` and remain available for validating, uniting and
+testing strings throughout the run. Both interfaces share that same model.
+
+**Linear search in every structure.** This is a direct consequence of the
+project's constraint: with no hash tables or ordered containers, every query is
+resolved by walking the array and comparing one by one. The bounds in section
+11 are exactly those of that decision, and each of those operations is written
+with explicit loops.
