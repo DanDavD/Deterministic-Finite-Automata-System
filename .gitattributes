@@ -1,0 +1,9 @@
+# Language stats (GitHub Linguist)
+# The core of the project is C++17; the web UI and API test scripts are a thin
+# demo layer, so they are excluded from the repository language bar.
+
+# Web frontend (JS / CSS / HTML) served by the C++ HTTP server
+server/static/** linguist-vendored
+
+# PowerShell scripts that exercise the API endpoints
+*.ps1 linguist-detectable=false
